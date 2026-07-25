@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SuperCopy - 智能文本复制工具</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222;
+    --border: #2a2a2a;
+    --text: #e0e0e0;
+    --text2: #999;
+    --accent: #6c5ce7;
+    --accent2: #a29bfe;
+    --danger: #e74c3c;
+    --danger2: #c0392b;
+    --green: #2ecc71;
+    --green2: #27ae60;
+    --orange: #f39c12;
+    --radius: 12px;
+    --transition: 0.2s ease;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  /* 背景装饰 */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(108, 92, 231, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(162, 155, 254, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(46, 204, 113, 0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+
+  .logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+
+  .logo span { background: linear-gradient(135deg, #fff, #b0b0b0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--text2);
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: border-color var(--transition);
+  }
+
+  .card:focus-within {
+    border-color: var(--accent);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Textarea */
+  textarea {
+    width: 100%;
+    min-height: 200px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 16px;
+    resize: vertical;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+
+  textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.15);
+  }
+
+  textarea::placeholder {
+    color: #555;
+  }
+
+  /* Stats bar */
+  .stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .stat-value {
+    color: var(--accent2);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Filters */
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 24px;
+  }
+
+  .filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text2);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .filter-btn:hover {
+    border-color: #444;
+    color: var(--text);
+  }
+
+  .filter-btn.active {
+    background: rgba(108, 92, 231, 0.15);
+    border-color: var(--accent);
+    color: var(--accent2);
+  }
+
+  .filter-btn .icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+  }
+
+  .filter-btn .badge {
+    font-size: 11px;
+    background: rgba(255,255,255,0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: auto;
+  }
+
+  .filter-btn.active .badge {
+    background: rgba(108, 92, 231, 0.25);
+  }
+
+  /* Actions */
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    font-family: inherit;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #5b4cdb);
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(108, 92, 231, 0.35);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    border-color: #444;
+    background: #262626;
+  }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid transparent;
+  }
+
+  .btn-danger:hover {
+    background: rgba(231, 76, 60, 0.1);
+    border-color: rgba(231, 76, 60, 0.3);
+  }
+
+  .btn-copy {
+    background: linear-gradient(135deg, var(--green), var(--green2));
+    color: #fff;
+  }
+
+  .btn-copy:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(46, 204, 113, 0.35);
+  }
+
+  .btn-copy.copied {
+    background: linear-gradient(135deg, #27ae60, #1e8449);
+  }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Diff highlight */
+  .removed-preview {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: rgba(231, 76, 60, 0.08);
+    border: 1px solid rgba(231, 76, 60, 0.2);
+    border-radius: 8px;
+    display: none;
+  }
+
+  .removed-preview.visible {
+    display: block;
+  }
+
+  .removed-preview .title {
+    font-size: 12px;
+    color: var(--danger);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .removed-preview .content {
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 13px;
+    color: #999;
+    word-break: break-all;
+    max-height: 60px;
+    overflow-y: auto;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-120px);
+    background: var(--surface);
+    border: 1px solid var(--green);
+    color: var(--green);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 100;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    body { padding: 20px 12px; }
+    .filters { gap: 8px; }
+    .filter-btn { padding: 8px 12px; font-size: 12px; }
+    .actions { flex-direction: column; }
+    .btn { justify-content: center; }
+    textarea { min-height: 150px; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #444; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">📋</div>
+      <span>SuperCopy</span>
+    </div>
+    <p class="subtitle">粘贴文本 · 一句话去除不需要的内容 · 一键复制</p>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-filter="chinese">
+      <span class="icon">🀄</span> 去除中文
+      <span class="badge">CJK</span>
+    </button>
+    <button class="filter-btn active" data-filter="emoji">
+      <span class="icon">😀</span> 去除 Emoji
+      <span class="badge">😀</span>
+    </button>
+    <button class="filter-btn" data-filter="numbers">
+      <span class="icon">🔢</span> 去除数字
+      <span class="badge">0-9</span>
+    </button>
+    <button class="filter-btn" data-filter="punctuation">
+      <span class="icon">〰️</span> 去除标点
+      <span class="badge">，。</span>
+    </button>
+    <button class="filter-btn" data-filter="whitespace">
+      <span class="icon">␣</span> 压缩空格
+      <span class="badge">\\s</span>
+    </button>
+    <button class="filter-btn" data-filter="special">
+      <span class="icon">※</span> 去除特殊符号
+      <span class="badge">#@</span>
+    </button>
+    <button class="filter-btn active" data-filter="tracking">
+      <span class="icon">🔗</span> 去除追踪标记
+      <span class="badge">?s=</span>
+    </button>
+    <button class="filter-btn" data-filter="expand">
+      <span class="icon">🔀</span> 展开短链
+      <span class="badge">b23.tv</span>
+    </button>
+    <button class="filter-btn" data-filter="bvav">
+      <span class="icon">🔄</span> BV⇄AV
+      <span class="badge">BV1</span>
+    </button>
+    <button class="filter-btn" data-filter="extracturl">
+      <span class="icon">📋</span> 口令提取
+      <span class="badge">链接</span>
+    </button>
+    <button class="filter-btn" data-filter="urldecode">
+      <span class="icon">🔓</span> URL解码
+      <span class="badge">%xx</span>
+    </button>
+  </div>
+
+  <!-- Input -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📥 输入文本</span>
+      <button class="btn btn-danger" id="clearBtn" style="padding: 6px 12px; font-size: 12px;">清空</button>
+    </div>
+    <textarea
+      id="input"
+      placeholder="在此粘贴你的文本...&#10;&#10;支持快捷键：&#10;  Ctrl+V  粘贴&#10;  Ctrl+A  全选"
+    ></textarea>
+    <div class="stats">
+      <div class="stat">字符 <span class="stat-value" id="inputChars">0</span></div>
+      <div class="stat">单词 <span class="stat-value" id="inputWords">0</span></div>
+      <div class="stat">行 <span class="stat-value" id="inputLines">0</span></div>
+      <div class="stat" id="chineseCountStat" style="display:none;">中文 <span class="stat-value" id="chineseCount">0</span></div>
+      <div class="stat" id="emojiCountStat" style="display:none;">Emoji <span class="stat-value" id="emojiCount">0</span></div>
+    </div>
+  </div>
+
+  <!-- Output -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📤 处理后文本</span>
+      <span style="font-size: 12px; color: var(--text2);" id="diffInfo"></span>
+    </div>
+    <textarea
+      id="output"
+      placeholder="处理后的文本将显示在这里..."
+      readonly
+    ></textarea>
+    <div class="stats">
+      <div class="stat">字符 <span class="stat-value" id="outputChars">0</span></div>
+      <div class="stat">单词 <span class="stat-value" id="outputWords">0</span></div>
+      <div class="stat">行 <span class="stat-value" id="outputLines">0</span></div>
+      <div class="stat" style="color: var(--green);">已去除 <span class="stat-value" id="removedCount" style="color: var(--green);">0</span> 个字符</div>
+    </div>
+
+    <!-- Removed content preview -->
+    <div class="removed-preview" id="removedPreview">
+      <div class="title">🗑️ 被去除的内容</div>
+      <div class="content" id="removedContent"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-copy" id="copyBtn">
+        <span>📋</span> 复制结果
+      </button>
+      <button class="btn btn-secondary" id="pasteBtn">
+        <span>📎</span> 从剪贴板粘贴
+      </button>
+      <button class="btn btn-secondary" id="swapBtn">
+        <span>🔄</span> 设为输入
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  // --- DOM ---
+  const $input    = document.getElementById('input');
+  const $output   = document.getElementById('output');
+  const $filters  = document.getElementById('filters');
+  const $copyBtn  = document.getElementById('copyBtn');
+  const $clearBtn = document.getElementById('clearBtn');
+  const $pasteBtn = document.getElementById('pasteBtn');
+  const $swapBtn  = document.getElementById('swapBtn');
+  const $toast    = document.getElementById('toast');
+  const $removedPreview = document.getElementById('removedPreview');
+  const $removedContent = document.getElementById('removedContent');
+  const $diffInfo = document.getElementById('diffInfo');
+
+  const $inputChars  = document.getElementById('inputChars');
+  const $inputWords  = document.getElementById('inputWords');
+  const $inputLines  = document.getElementById('inputLines');
+  const $outputChars = document.getElementById('outputChars');
+  const $outputWords = document.getElementById('outputWords');
+  const $outputLines = document.getElementById('outputLines');
+  const $removedCount= document.getElementById('removedCount');
+  const $chineseCount= document.getElementById('chineseCount');
+  const $chineseCountStat = document.getElementById('chineseCountStat');
+  const $emojiCount  = document.getElementById('emojiCount');
+  const $emojiCountStat = document.getElementById('emojiCountStat');
+
+  // --- State ---
+  const activeFilters = new Set(
+    [...$filters.querySelectorAll('.filter-btn.active')].map(b => b.dataset.filter)
+  );
+
+  // --- Regex patterns ---
+  const PATTERNS = {
+    chinese:     /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\u3000-\u303f\uff00-\uffef\u2e80-\u2eff\u31c0-\u31ef\u3200-\u32ff\u3300-\u33ff\ufe10-\ufe1f\ufe30-\ufe4f]/g,
+    emoji:       /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{2934}\u{2935}\u{25AA}\u{25AB}\u{25B6}\u{25C0}\u{25FB}-\u{25FE}\u{200D}\u{FE0F}\u{20E3}\u{1F004}\u{1F0CF}\u{1F18E}]/gu,
+    numbers:     /\d+/g,
+    punctuation: /[\p{P}\p{S}]/gu,
+    whitespace:  /\s{2,}/g,
+    special:     /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/g,
+  };
+
+  // --- Tracking params to strip from URLs ---
+  // Common tracking/analytics query parameters across platforms
+  const TRACKING_PARAMS = [
+    // CoolAPK & Chinese platforms
+    's', 'spm', 'spmid', 'from', 'source', 'track', 'trackid',
+    'share_id', 'shareid', 'shared_from', 'share_from', 'share_medium',
+    'share_plat', 'share_session_id', 'share_source', 'share_tag',
+    'from_spmid', 'spmid_from', 'scene', 'channel', 'refer', 'ref',
+    // Universal analytics
+    'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+    'utm_id', 'utm_source_platform', 'utm_creative', 'utm_creative_format',
+    // Facebook / Instagram
+    'fbclid', 'fb_action_ids', 'fb_action_types', 'fb_source', 'fb_ref',
+    'igshid', 'igsh',
+    // Google
+    'gclid', 'gclsrc', 'dclid', 'gbraid', 'wbraid',
+    // Twitter / X
+    'twclid', 't', 's09', 'ref_src', 'ref_url',
+    // Others
+    'mc_cid', 'mc_eid', 'mc_tc',
+    '_ga', '_gl', '_hsenc', '_hsmi', '_ke',
+    'ck_subscriber_id', 'oly_anon_id', 'oly_enc_id',
+    'otc', 'rss', 'sc_cid', 'si',
+    // Taobao / Tmall / JD / Chinese e-commerce
+    'ali_trackid', 'ali_refid', 'e', 'skuid', 'activityid',
+    'app', 'cpp', 'price', 'bxsign', 'wxsign',
+    'shareuniqueid', 'share_crt_v', 'shareurl', 'short_name',
+    'sourcetype', 'sp_tk', 'tk', 'tbsocialpopkey',
+    'un', 'un_site', 'ut_sk', 'suid',
+    'abbucket', 'ns', 'utparam', 'pricetid', 'mi_id', 'xxc',
+    // PDD
+    'refer_page_name', 'refer_page_id', 'refer_page_el_sn',
+    'page_from', 'feeds_pack_id', 'duoduo_type',
+    'pxq_secret_key', '_oak_share_snapshot_num', '_oak_share_time',
+    'share_oak_rcto', '_oak_share_ticket', 'share_uin',
+    'refer_share_id', 'refer_share_uin', 'refer_share_channel',
+    'refer_share_form', '_x_share_id', 'refer_page_sn', 'uin',
+    // Jingdong (JD)
+    'jxsid', 'jdsn', 'mpja', 'mpjb', 'mpjc',
+    'jd_pop', 'jd_track', 'ad_od', 'utm_term', 'utm_user',
+    // Bilibili
+    'buvid', 'buvid3', 'buvid4', 'buvid5',
+    'buvid6', 'buvid7', 'buvid8',
+    'unique_k', 'timestamp', 'up_id',
+    'plat_id', 'platform', 'plat', 'is_story_h5', 'story_h5',
+    'share_style', 'share_redirect_delay',
+    // WeChat
+    'wx_scene', 'wx_share_id',
+    // Zhihu
+    'zhid', 'utm_oi',
+    // Douyin / TikTok
+    'enter_from', 'enter_method', 'previous_page',
+    'sec_uid', 'did', 'iid', 'device_id',
+    // WeChat
+    'xtrack', 'req_id', 'subscene', 'sessionid', 'clicktime',
+    'enterid', 'finder_biz_enter_id', 'ranksessionid',
+    'jumppath', 'jumppathdepth', 'ascene',
+    'fasttmpl_type', 'fasttmpl_fullversion', 'fasttmpl_flag',
+    'realreporttime', 'devicetype', 'nettype', 'session_us',
+    'exportkey', 'pass_ticket', 'wx_header', 'flutter_pos',
+    // Douban
+    '_spm_id', '_i', 'dt_dapp', 'dt_platform',
+    // Tieba
+    'share', 'fr', 'see_lz', 'sfc', 'client_type', 'client_version',
+    'st', 'is_video', 'unique',
+    // Kuaishou
+    'cc', 'followrefer', 'sharemethod', 'docid', 'kpn', 'subbiz',
+    'photoid', 'sharetoken', 'shareresourcetype', 'userid',
+    'sharetype', 'et', 'sharemode', 'efid', 'originshareid',
+    'apptype', 'shareobjectid', 'shareurlopened', 'location',
+    // Hongguo / NovelQuickApp
+    'zlink', 'gd_label', 'share_type', 'use_open_launch_app_novel',
+    'user_id', 'share_timestamp', 'source_channel', 'entrance',
+    'report_params', 'ug_token', 'did',
+    // Xiaohongshu (RED)
+    'xhs_share_id', 'xhs_source', 'xhsshare', 'shareRedId', 'shareredid',
+    'xsec_source', 'app_platform', 'app_version', 'apptime',
+    'share_from_user_hidden', 'ignoreengage', 'author_share',
+    'share_channel', 'share_redirect_url',
+    // Generic share / nav params
+    'navhide', 'header', 'footer', 'hidebar',
+    'shareto', 'sharetype', 'shareid',
+    'redirect', 'redirect_url', 'redir',
+    'session_id', 'sid', 'token', 'access_token',
+    'country', 'region',
+  ];
+
+  // --- Whitelist: params that must NEVER be removed (security tokens, functional params) ---
+  const KEEP_PARAMS = new Set([
+    'xsec_token',    // Xiaohongshu security token — required for the link to work
+    'type',          // Content type discriminator
+    'id', 'qid', 'pid', 'cid', 'uid', 'gid', 'goods_id', 'encrypt_did', 'schemeParams', // Content/entity IDs
+    'p', 'page',     // Pagination
+    'q', 'query', 'search', 'keyword', // Search
+    'sort', 'order', 'dir', // Sort/filter
+    'tab', 'cat', 'category', // Category navigation
+    'v', 'version', // API version
+    'lang', 'locale', // Navigation prefs, not tracking
+    '__biz', 'mid', 'idx', 'sn', 'chksm', // WeChat article essential params
+  ]);
+
+  // --- Aggressive mode: for these domains, strip ALL params except KEEP_PARAMS ---
+  // Too many ever-changing tracking params to maintain individually
+  const AGGRESSIVE_DOMAINS = [
+    'item.taobao.com', 'detail.tmall.com', 'h5.m.taobao.com', 'm.tb.cn',
+    'item.jd.com', 'item.m.jd.com',
+    'h5.m.goofish.com', 'goofish.com',
+    'pinduoduo.com', 'mobile.yangkeduo.com',
+    'm.bilibili.com', 'www.bilibili.com', 'b23.tv',
+    'www.xiaohongshu.com', 'xhslink.com',
+    'www.coolapk.com',
+    'www.zhihu.com',
+    'www.douyin.com', 'v.douyin.com', 'iesdouyin.com',
+    'mp.weixin.qq.com', 'channels.weixin.qq.com',
+    'novelquickapp.com',
+    'kuaishou.com', 'www.kuaishou.com',
+    'tieba.baidu.com',
+    'douban.com', 'www.douban.com',
+    'lofter.com',
+    'toutiao.com', 'www.toutiao.com',
+    'music.163.com', 'y.music.163.com',
+    'store.steampowered.com',
+    'youtube.com', 'www.youtube.com', 'youtu.be',
+    'fanbox.cc',
+    'amazon.co.jp', 'amazon.com', 'amazon.cn', 'amazon.co.uk', 'amazon.de',
+  ];
+
+  // --- Simplify uri param for Douban: strip tracking from nested path ---
+  function simplifyDoubanUri(url) {
+    const uriMatch = url.match(/[?&]uri=([^&]+)/);
+    if (!uriMatch) return url;
+
+    let uriVal = uriMatch[1];
+    try { uriVal = decodeURIComponent(uriVal); } catch { /* keep as-is */ }
+
+    // Strip tracking params from the nested path
+    const qIdx = uriVal.indexOf('?');
+    if (qIdx < 0) return url; // No nested query string
+
+    const path = uriVal.slice(0, qIdx);
+    const qs = uriVal.slice(qIdx + 1);
+    const params = qs.split('&');
+    const cleanParams = params.filter(p => {
+      const key = (p.indexOf('=') >= 0 ? p.slice(0, p.indexOf('=')) : p).toLowerCase();
+      // Douban tracking params in nested uri
+      if (['_spm_id', '_i', 'dt_dapp', 'dt_platform'].includes(key)) return false;
+      return true;
+    });
+
+    let cleanUri = path;
+    if (cleanParams.length > 0) cleanUri += '?' + cleanParams.join('&');
+
+    // Replace uri in the full URL
+    const uriStart = url.indexOf('uri=') + 4;
+    const uriEnd = url.indexOf('&', uriStart);
+    const before = url.slice(0, uriStart);
+    const after = uriEnd >= 0 ? url.slice(uriEnd) : '';
+    return before + cleanUri + after;
+  }
+
+  // --- Simplify Amazon URLs: keep only /dp/{ASIN} ---
+  function simplifyAmazonUrl(url) {
+    // Extract ASIN from path, handle both /title/dp/ASIN and /dp/ASIN
+    // Compatible with https://, http://, www., and bare domains
+    return url.replace(
+      /^(?:(?:https?:\/\/)?[^\/]+)\/(?:.+\/)?dp\/([A-Z0-9]+).*$/i,
+      (m, asin) => {
+        const prefix = /^www\./i.test(url) ? 'https://' + url.match(/^www\.[^\/]+/i)[0] :
+                       /^https?:\/\//i.test(url) ? url.match(/^https?:\/\/[^\/]+/i)[0] :
+                       'https://' + url.match(/^[^\/]+/i)[0];
+        return prefix + '/dp/' + asin;
+      }
+    );
+  }
+
+  // --- Simplify Steam URLs: remove placeholder title slug ---
+  function simplifySteamUrl(url) {
+    // /app/513710/_/ → /app/513710/
+    return url.replace(/(store\.steampowered\.com\/app\/\d+\/)_\//gi, '$1');
+  }
+
+  // --- Simplify NetEase Music URLs: mobile → PC format ---
+  function simplifyMusicUrl(url) {
+    // y.music.163.com/m/song → music.163.com/#/song
+    // music.163.com/m/song → music.163.com/#/song
+    return url.replace(
+      /^https?:\/\/(?:y\.)?music\.163\.com\/m\//i,
+      'https://music.163.com/#/'
+    );
+  }
+
+  // --- Domain-specific overrides: some platforms need different rules ---
+  function getDomainParamBlacklist(domain) {
+    // Bilibili: mid = user/member ID (tracking), NOT a content ID
+    if (/bilibili\.com$|b23\.tv$/.test(domain)) return new Set(['mid']);
+    // Douyin: mid = music/sound ID (metadata), video ID is in the path
+    if (/douyin\.com$|iesdouyin\.com$/.test(domain)) return new Set(['mid']);
+    // WeChat: version/lang are app metadata, not needed for the article
+    if (/mp\.weixin\.qq\.com$/.test(domain)) return new Set(['version', 'lang']);
+    // Hongguo: uid is device metadata, not essential
+    if (/novelquickapp\.com$/.test(domain)) return new Set(['uid']);
+    return null;
+  }
+
+  // Domain-specific KEEP overrides: replaces global KEEP_PARAMS for this domain
+  function getDomainKeepParams(domain) {
+    // Hongguo: only encrypt_did + zlink + share_type + schemeParams are essential
+    if (/novelquickapp\.com$/.test(domain)) {
+      return new Set(['encrypt_did', 'zlink', 'share_type', 'schemeParams']);
+    }
+    // Douban: only uri is essential (contains nested path, may carry tracking)
+    if (/douban\.com$/.test(domain)) {
+      return new Set(['uri']);
+    }
+    return null; // Use global KEEP_PARAMS
+  }
+
+  // --- Simplify zlink for 红果短剧: keep only vid+video_id in schemeParams ---
+  function simplifyHongguoZlink(url) {
+    // Match zlink param: everything from zlink= to the next & or end
+    const zlinkMatch = url.match(/[?&]zlink=(.+?)(&|$)/);
+    if (!zlinkMatch) return url;
+
+    const zlinkVal = zlinkMatch[1];
+    // Decode the zlink value (may be URL-encoded)
+    let decodedZlink;
+    try { decodedZlink = decodeURIComponent(zlinkVal); } catch { return url; }
+
+    // Find schemeParams inside the nested URL
+    const spMatch = decodedZlink.match(/[?&]schemeParams=([^&]+)(&|$)/);
+    if (!spMatch) return url;
+
+    let spVal = spMatch[1];
+    // Decode schemeParams until it's plain JSON
+    try {
+      while (/%[0-9A-Fa-f]{2}/.test(spVal)) {
+        spVal = decodeURIComponent(spVal);
+      }
+    } catch { return url; }
+
+    // Parse JSON and keep only vid + video_id
+    try {
+      const json = JSON.parse(spVal);
+      const clean = {};
+      if (json.vid) clean.vid = json.vid;
+      if (json.video_id) clean.video_id = json.video_id;
+      const cleanJson = JSON.stringify(clean);
+
+      // Reconstruct zlink: base URL + decoded schemeParams JSON
+      const zlinkBase = decodedZlink.replace(/\?.*$/, '');
+      const cleanZlink = zlinkBase + '?schemeParams=' + cleanJson;
+
+      // Replace zlink in the full URL (zlink itself not encoded, only schemeParams)
+      const zlinkStart = url.indexOf('zlink=') + 6;
+      const zlinkEnd = url.indexOf('&', zlinkStart);
+      const before = url.substring(0, zlinkStart);
+      const after = zlinkEnd >= 0 ? url.substring(zlinkEnd) : '';
+      return before + cleanZlink + after;
+    } catch {
+      return url;
+    }
+  }
+
+  function extractDomain(url) {
+    // Handle normal, URL-encoded, and protocol-less URLs
+    let decoded = url;
+    if (/^https?%3A/i.test(url)) {
+      try { decoded = decodeURIComponent(url); } catch { /* keep original */ }
+    }
+    // Match https?://domain or www.domain or sub.domain.tld
+    const host = decoded.match(/(?:https?:\/\/)?([^\/\s?#]+)/i);
+    return host ? host[1].toLowerCase() : '';
+  }
+
+  function isAggressiveDomain(url) {
+    try {
+      const domain = extractDomain(url);
+      if (!domain) return false;
+      return AGGRESSIVE_DOMAINS.some(d => domain === d || domain.endsWith('.' + d));
+    } catch { return false; }
+  }
+
+  // --- Bilibili BV ↔ AV conversion ---
+  const BV_TABLE = 'fZodR9XQDSUm21yCkr6zBqiveYah8bt4xsWpHnJE7jL5VG3guMTKNPAwcF';
+  const BV_S = [11, 10, 3, 8, 4, 6];       // positions of encoded chars in BV string
+  const BV_XOR = 177451812;
+  const BV_ADD = 8728348608;
+  const BV_TEMPLATE = [...'BV1  4 1 7  ']; // template for AV→BV conversion
+
+  function bvToAv(bv) {
+    let sum = 0;
+    for (let i = 0; i < 6; i++) {
+      const idx = BV_TABLE.indexOf(bv[BV_S[i]]);
+      if (idx === -1) return null;
+      sum += idx * Math.pow(58, i);
+    }
+    const av = (sum - BV_ADD) ^ BV_XOR;
+    if (av <= 0) return null;
+    return 'av' + av;
+  }
+
+  function avToBv(av) {
+    const num = parseInt(av.replace(/av/i, ''));
+    if (isNaN(num) || num <= 0) return null;
+    let n = (num ^ BV_XOR) + BV_ADD;
+    const result = [...BV_TEMPLATE];
+    for (let i = 0; i < 6; i++) {
+      result[BV_S[i]] = BV_TABLE[Math.floor(n / Math.pow(58, i)) % 58];
+    }
+    return result.join('');
+  }
+
+  function convertBvAv(text) {
+    const convertedFromBv = new Set();
+    // BV → AV
+    let result = text.replace(/BV1[a-zA-Z0-9]{9}/gi, m => {
+      if (m.length !== 12) return m;
+      const av = bvToAv(m);
+      if (av) convertedFromBv.add(av.toLowerCase());
+      return av || m;
+    });
+    // AV → BV (skip AV codes we just created from BV conversion)
+    result = result.replace(/\bav(\d+)\b/gi, m => {
+      if (convertedFromBv.has(m.toLowerCase())) return m;
+      const bv = avToBv(m);
+      return bv || m;
+    });
+    return result;
+  }
+
+  const FILTER_LABELS = {
+    chinese:     '中文',
+    emoji:       'Emoji',
+    numbers:     '数字',
+    punctuation: '标点',
+    whitespace:  '多余空格',
+    special:     '特殊符号',
+    tracking:    '追踪参数',
+    expand:      '展开短链',
+    bvav:        'BV⇄AV',
+    extracturl:  '口令提取',
+    urldecode:   'URL解码',
+  };
+
+  // --- Filter button clicks ---
+  $filters.addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    const key = btn.dataset.filter;
+    if (activeFilters.has(key)) {
+      activeFilters.delete(key);
+      btn.classList.remove('active');
+    } else {
+      activeFilters.add(key);
+      btn.classList.add('active');
+    }
+    process();
+  });
+
+  // --- Input typing ---
+  let debounceTimer;
+  $input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(process, 150);
+  });
+
+  // --- Expand short links by calling local server API ---
+  // Matches all URLs; the server follows redirects and returns the final URL.
+  // Non-short URLs just resolve to themselves (no-op).
+  const URL_REGEX = /(?:https?:\/\/|https?%3A%2F%2F)[^\s<>^`\[\]]+/gi;
+
+  async function expandShortUrls(text) {
+    const matches = text.match(URL_REGEX);
+    if (!matches) return text;
+
+    // Convert expanded URL to PC format where applicable
+    function normalizeUrl(url) {
+      // xhslink.cn → xiaohongshu.com: /discovery/item/ → /explore/
+      const m = url.match(/^(https?:\/\/www\.xiaohongshu\.com)\/discovery\/item\/([a-f0-9]+)(\?.*)?$/i);
+      if (m) {
+        return m[1] + '/explore/' + m[2] + (m[3] || '');
+      }
+      return url;
+    }
+
+    // Deduplicate URLs to avoid redundant API calls
+    const uniqueUrls = [...new Set(matches)];
+
+    // Expand with limited concurrency (2 at a time) to avoid overwhelming server
+    const expansions = [];
+    for (let i = 0; i < uniqueUrls.length; i += 2) {
+      const batch = uniqueUrls.slice(i, i + 2);
+      const results = await Promise.all(batch.map(async (u) => {
+        try {
+          const apiUrl = '/expand?url=' + encodeURIComponent(u);
+          const resp = await fetch(apiUrl, { signal: AbortSignal.timeout(15000) });
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.expanded && data.expanded !== u) {
+              return { from: u, to: normalizeUrl(data.expanded) };
+            }
+          }
+        } catch (e) {
+          console.warn('短链展开失败:', u, e.message);
+        }
+        return null;
+      }));
+      expansions.push(...results);
+    }
+
+    let result = text;
+    for (const e of expansions) {
+      if (e) result = result.replace(e.from, e.to);
+    }
+    return result;
+  }
+
+  // --- Process ---
+  async function process() {
+    const raw = $input.value;
+    let result = raw;
+    const removedParts = [];
+
+    // Enforce processing order: extracturl → expand → tracking
+    const orderedKeys = [...activeFilters];
+    const orderPriority = ['extracturl', 'expand', 'tracking'];
+    // Move these three to the front in priority order, keeping others stable
+    for (let p = orderPriority.length - 1; p >= 0; p--) {
+      const key = orderPriority[p];
+      const idx = orderedKeys.indexOf(key);
+      if (idx > -1) {
+        orderedKeys.splice(idx, 1);
+        orderedKeys.unshift(key);
+      }
+    }
+    // Now the first items are extracturl, expand, tracking (if present) in order
+
+    for (const key of orderedKeys) {
+      if (key === 'urldecode') continue;
+      if (key === 'whitespace') {
+        // Special: compress whitespace instead of remove
+        const before = result;
+        result = result.replace(PATTERNS.whitespace, ' ');
+        result = result.replace(/^\s+|\s+$/g, ''); // trim as well
+        if (before !== result) {
+          removedParts.push('多余空格');
+        }
+      } else if (key === 'extracturl') {
+        // Extract URLs from share phrases (抖音口令 etc.)
+        const urlRegex = /(?:https?:\/\/|https?%3A%2F%2F|www\.|[a-z0-9][-a-z0-9]*\.[a-z]{2,}\/)[^\s<>^`\[\]]+/gi;
+        const urls = result.match(urlRegex);
+        if (urls && urls.length > 0) {
+          result = [...new Set(urls)].join('\n');
+          removedParts.push(`[口令提取: ${urls.length} 个链接]`);
+        }
+      } else if (key === 'expand') {
+        // Expand short links (b23.tv etc.)
+        const before = result;
+        result = await expandShortUrls(result);
+        if (before !== result) {
+          removedParts.push('[短链已展开]');
+        }
+      } else if (key === 'bvav') {
+        // Bilibili BV ↔ AV conversion
+        const before = result;
+        result = convertBvAv(result);
+        if (before !== result) {
+          removedParts.push('[BV⇄AV 已转换]');
+        }
+      } else if (key === 'tracking') {
+        // Strip tracking params from URLs
+        const before = result;
+        result = stripTrackingParams(result);
+        if (before !== result) {
+          const strippedCount = before.length - result.length;
+          removedParts.push(`[追踪参数: 去除 ${strippedCount} 个字符]`);
+        }
+      } else {
+        const pattern = PATTERNS[key];
+        if (!pattern) continue;
+
+        // Collect removed content for preview
+        const matches = result.match(pattern);
+        if (matches && matches.length > 0) {
+          const removedStr = matches.join('').slice(0, 50);
+          removedParts.push(`[${FILTER_LABELS[key]}: ${removedStr}${matches.join('').length > 50 ? '...' : ''}]`);
+        }
+
+        result = result.replace(pattern, '');
+      }
+    }
+
+    // Remove blank lines (optional cleanup)
+    if (activeFilters.has('whitespace')) {
+      result = result.replace(/\n{3,}/g, '\n\n');
+    }
+
+    // URL decode runs LAST — after tracking params are already stripped,
+    // so it won't break the query string structure
+    if (activeFilters.has('urldecode')) {
+      const before = result;
+      result = urlDecodeText(result);
+      if (before !== result) {
+        removedParts.push('[URL解码]');
+      }
+    }
+
+    $output.value = result;
+
+    // Stats
+    updateStats(raw, result);
+    updateRemovedPreview(raw, result, removedParts);
+
+    // Diff info
+    if (raw !== result) {
+      const removed = raw.length - result.length;
+      $diffInfo.textContent = `减少了 ${removed} 个字符`;
+    } else {
+      $diffInfo.textContent = '';
+    }
+  }
+
+  // --- URL decode: convert %xx sequences to normal characters ---
+  // Handles double-encoded URLs (e.g. %253A → %3A → : after repeated decoding)
+  function urlDecodeText(text) {
+    try {
+      let prev = text;
+      // Decode up to 3 times to handle double/triple encoding
+      for (let i = 0; i < 3; i++) {
+        let decoded;
+        try {
+          decoded = decodeURIComponent(prev);
+        } catch {
+          // If full decode fails, try replacing only valid %xx sequences
+          decoded = prev.replace(/%[0-9A-Fa-f]{2}/g, m => {
+            try { return decodeURIComponent(m); } catch { return m; }
+          });
+        }
+        if (decoded === prev) break;
+        prev = decoded;
+      }
+      return prev;
+    } catch {
+      return text;
+    }
+  }
+
+  // --- Strip tracking params from all URLs in text ---
+  function stripTrackingParams(text) {
+    // Match URLs with query strings: protocol://domain/path?key=val&key2=val2#hash
+    // Match both normal URLs and URL-encoded scheme (https%3A%2F%2F)
+    const urlRegex = /(?:https?:\/\/|https?%3A%2F%2F|www\.|[a-z0-9][-a-z0-9]*\.[a-z]{2,}\/)[^\s<>^`\[\]]+/gi;
+
+    return text.replace(urlRegex, (url) => {
+      // Normalize: add https:// if URL starts without protocol
+      let normalized = url;
+      if (!/^https?:\/\//i.test(url) && !/^https?%3A/i.test(url)) {
+        normalized = 'https://' + url;
+      }
+
+      // Split into base + query + hash
+      const hashIdx = url.indexOf('#');
+      const hash = hashIdx >= 0 ? url.slice(hashIdx) : '';
+      const baseUrl = hashIdx >= 0 ? url.slice(0, hashIdx) : url;
+
+      const qIdx = baseUrl.indexOf('?');
+      if (qIdx < 0) return url; // No query string
+
+      const base = baseUrl.slice(0, qIdx);
+      const qs = baseUrl.slice(qIdx + 1);
+      const params = qs.split('&');
+
+      // Parse query params, filter out tracking ones
+      const aggressive = isAggressiveDomain(normalized);
+
+      // Domain-specific blacklist for this URL
+      const urlDomain = extractDomain(normalized);
+      const domainBlacklist = getDomainParamBlacklist(urlDomain);
+
+      const cleanParams = params.filter(param => {
+        // Extract key (before first =)
+        const eqIdx = param.indexOf('=');
+        const key = (eqIdx >= 0 ? param.slice(0, eqIdx) : param).toLowerCase();
+        const val = eqIdx >= 0 ? param.slice(eqIdx + 1) : '';
+
+        // 0a. Domain-specific blacklist overrides everything
+        if (domainBlacklist && domainBlacklist.has(key)) return false;
+
+        // 0b. Domain-specific KEEP (replaces global KEEP_PARAMS for this domain)
+        const domainKeep = getDomainKeepParams(urlDomain);
+        if (domainKeep) {
+          if (domainKeep.has(key)) return true;
+        } else if (KEEP_PARAMS.has(key)) {
+          return true;
+        }
+
+        // AGGRESSIVE MODE: for notorious tracking domains, strip EVERYTHING else
+        if (aggressive) return false;
+
+        // 1. Remove if key is in tracking list
+        if (TRACKING_PARAMS.includes(key)) return false;
+
+        // 2. Remove if value looks like a tracking hash/token:
+        //    - >30 chars of hex/base64 (with padding =, +, /)
+        //    - >20 chars that looks like a hex string
+        //    - UUID/GUID pattern
+        if (eqIdx >= 0) {
+          if (val.length > 30 && /^[a-zA-Z0-9_+/=-]+$/.test(val)) return false;
+          if (val.length > 20 && /^[a-fA-F0-9]{20,}$/.test(val)) return false;
+          if (/^[a-fA-F0-9]{8}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{12}$/.test(val)) return false;
+        }
+
+        return true;
+      });
+
+      // Reconstruct URL
+      let clean = base;
+      if (cleanParams.length > 0) {
+        clean += '?' + cleanParams.join('&');
+      }
+      clean += hash;
+
+      // Post-processing: platform-specific URL normalization
+      if (aggressive) {
+        clean = simplifyHongguoZlink(clean);
+        clean = simplifyDoubanUri(clean);
+        clean = simplifyMusicUrl(clean);
+        clean = simplifySteamUrl(clean);
+        clean = simplifyAmazonUrl(clean);
+      }
+
+      return clean;
+    });
+  }
+
+  function updateStats(raw, result) {
+    $inputChars.textContent = raw.length;
+    $inputWords.textContent = raw.trim() ? raw.trim().split(/\s+/).length : 0;
+    $inputLines.textContent = raw ? raw.split('\n').length : 0;
+
+    $outputChars.textContent = result.length;
+    $outputWords.textContent = result.trim() ? result.trim().split(/\s+/).length : 0;
+    $outputLines.textContent = result ? result.split('\n').length : 0;
+
+    $removedCount.textContent = raw.length - result.length;
+
+    // Chinese char count
+    const chineseMatches = raw.match(PATTERNS.chinese);
+    if (chineseMatches && chineseMatches.length > 0) {
+      $chineseCount.textContent = chineseMatches.join('').length;
+      $chineseCountStat.style.display = '';
+    } else {
+      $chineseCountStat.style.display = 'none';
+    }
+
+    // Emoji count
+    const emojiMatches = raw.match(PATTERNS.emoji);
+    if (emojiMatches && emojiMatches.length > 0) {
+      $emojiCount.textContent = emojiMatches.join('').length;
+      $emojiCountStat.style.display = '';
+    } else {
+      $emojiCountStat.style.display = 'none';
+    }
+  }
+
+  function updateRemovedPreview(raw, result, removedParts) {
+    if (raw === result || removedParts.length === 0) {
+      $removedPreview.classList.remove('visible');
+      return;
+    }
+    $removedPreview.classList.add('visible');
+    $removedContent.textContent = removedParts.join('  ');
+  }
+
+  // --- Copy ---
+  $copyBtn.addEventListener('click', async () => {
+    const text = $output.value;
+    if (!text) {
+      showToast('⚠️ 没有可复制的内容', 'warning');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      $copyBtn.classList.add('copied');
+      $copyBtn.innerHTML = '<span>✅</span> 已复制!';
+      showToast('✅ 已复制到剪贴板');
+      setTimeout(() => {
+        $copyBtn.classList.remove('copied');
+        $copyBtn.innerHTML = '<span>📋</span> 复制结果';
+      }, 2000);
+    } catch {
+      // Fallback
+      $output.select();
+      document.execCommand('copy');
+      showToast('✅ 已复制到剪贴板');
+      setTimeout(() => {
+        $copyBtn.classList.remove('copied');
+        $copyBtn.innerHTML = '<span>📋</span> 复制结果';
+      }, 2000);
+    }
+  });
+
+  // --- Paste ---
+  $pasteBtn.addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        $input.value = text;
+        process();
+        showToast('📎 已从剪贴板粘贴');
+      }
+    } catch {
+      showToast('⚠️ 无法读取剪贴板，请手动粘贴', 'warning');
+    }
+  });
+
+  // --- Swap (set output as input) ---
+  $swapBtn.addEventListener('click', () => {
+    if (!$output.value.trim()) return;
+    $input.value = $output.value;
+    process();
+    showToast('🔄 已将处理结果设为输入');
+  });
+
+  // --- Clear ---
+  $clearBtn.addEventListener('click', () => {
+    $input.value = '';
+    $output.value = '';
+    process();
+    showToast('🗑️ 已清空');
+  });
+
+  // --- Toast ---
+  let toastTimer;
+  function showToast(msg, type) {
+    clearTimeout(toastTimer);
+    $toast.textContent = msg;
+    $toast.className = 'toast show';
+    if (type === 'warning') {
+      $toast.style.borderColor = 'var(--orange)';
+      $toast.style.color = 'var(--orange)';
+    } else {
+      $toast.style.borderColor = 'var(--green)';
+      $toast.style.color = 'var(--green)';
+    }
+    toastTimer = setTimeout(() => {
+      $toast.classList.remove('show');
+    }, 2000);
+  }
+
+  // --- Keyboard shortcuts ---
+  document.addEventListener('keydown', e => {
+    // Ctrl+Shift+V to paste from clipboard
+    if (e.ctrlKey && e.shiftKey && e.key === 'V') {
+      e.preventDefault();
+      $pasteBtn.click();
+    }
+    // Ctrl+Shift+C to copy result
+    if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+      e.preventDefault();
+      $copyBtn.click();
+    }
+  });
+
+  // --- Initial process ---
+  process();
+
+  // --- Demo content ---
+  $input.value = '你好世界！Hello World! 🌍✨\n\n这段文本包含中文、Emoji 表情 😀🎉、数字 12345、以及特殊符号 @#$%。\n\nThis is a demo text with Chinese characters 中文内容 and various emojis 👋🚀💡.\n\n--- 追踪链接示例 ---\n\n酷安链接 (去除追踪参数 s=)：\nhttps://www.coolapk.com/feed/72893748?s=M2MwMmJkMTYyM2EzYzYwZzZhNjE4Yjc5ega1651b\n\n带 UTM 的链接：\nhttps://example.com/article?utm_source=wechat&utm_medium=share&utm_campaign=test&id=123\n\nB站链接 (去除追踪参数)：\nhttps://www.bilibili.com/video/BV1xx411c7mD?spm_id_from=333.337.0.0&buvid=XYZ123\n\n点击上方过滤按钮来选择性去除内容，然后一键复制结果！';
+  process();
+})();
+</script>
+</body>
+</html>
