@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -21,6 +21,21 @@
     --orange: #f39c12;
     --radius: 12px;
     --transition: 0.2s ease;
+    --shadow-color: rgba(0,0,0,0.5);
+    --hover-overlay: rgba(255,255,255,0.04);
+  }
+
+  [data-theme="light"] {
+    --bg: #f5f5f5;
+    --surface: #ffffff;
+    --surface2: #f0f0f0;
+    --border: #e0e0e0;
+    --text: #1a1a1a;
+    --text2: #777;
+    --accent: #6c5ce7;
+    --accent2: #5b4cdb;
+    --shadow-color: rgba(0,0,0,0.1);
+    --hover-overlay: rgba(0,0,0,0.04);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -29,10 +44,16 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
     background: var(--bg);
     color: var(--text);
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     display: flex;
     justify-content: center;
-    padding: 40px 20px;
+    padding: 16px 20px;
+    transition: background 0.35s ease, color 0.35s ease;
+  }
+
+  body * {
+    transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
   }
 
   /* 背景装饰 */
@@ -55,44 +76,38 @@
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 900px;
+    max-width: 1400px;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
   }
 
   /* Header */
-  .header {
-    text-align: center;
-    margin-bottom: 8px;
-  }
-
-  .logo {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    margin-bottom: 6px;
-  }
-
-  .logo-icon {
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 10px;
+  .top-bar {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 100;
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 20px;
+    gap: 12px;
   }
 
-  .logo span { background: linear-gradient(135deg, #fff, #b0b0b0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .logo-fixed {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--accent2);
+  }
 
-  .subtitle {
-    font-size: 14px;
-    color: var(--text2);
+  /* Two-column layout */
+  .columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    flex: 1;
+    min-height: 0;
   }
 
   /* Card */
@@ -102,6 +117,10 @@
     border-radius: var(--radius);
     padding: 24px;
     transition: border-color var(--transition);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .card:focus-within {
@@ -113,6 +132,7 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 16px;
+    flex-shrink: 0;
   }
 
   .card-title {
@@ -126,7 +146,8 @@
   /* Textarea */
   textarea {
     width: 100%;
-    min-height: 200px;
+    min-height: 0;
+    flex: 1;
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -146,7 +167,8 @@
   }
 
   textarea::placeholder {
-    color: #555;
+    color: var(--text2);
+    opacity: 0.6;
   }
 
   /* Stats bar */
@@ -170,57 +192,133 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Filters */
-  .filters {
+  /* === Sidebar + Main Layout === */
+  .main-layout {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin: 0 0 24px;
+    gap: 20px;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
   }
 
-  .filter-btn {
+  /* === Sidebar Menu === */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+    max-width: 200px;
+    flex-shrink: 0;
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+  }
+
+  .sidebar-section {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 6px 8px 4px;
+    margin-top: 4px;
+  }
+
+  .sidebar-section:first-child {
+    margin-top: 0;
+  }
+
+  .sidebar-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    width: 100%;
+    padding: 7px 10px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
     color: var(--text2);
-    font-size: 13px;
+    font-size: 12px;
+    font-family: inherit;
     cursor: pointer;
-    transition: all var(--transition);
-    user-select: none;
+    transition: all 0.12s ease;
+    text-align: left;
     white-space: nowrap;
   }
 
-  .filter-btn:hover {
-    border-color: #444;
+  .sidebar-item:hover {
+    background: var(--surface2);
     color: var(--text);
   }
 
-  .filter-btn.active {
-    background: rgba(108, 92, 231, 0.15);
-    border-color: var(--accent);
+  .sidebar-item.active {
     color: var(--accent2);
+    background: rgba(108, 92, 231, 0.12);
   }
 
-  .filter-btn .icon {
-    font-size: 16px;
-    width: 20px;
+  .sidebar-item .item-icon {
+    font-size: 14px;
+    width: 18px;
     text-align: center;
+    flex-shrink: 0;
   }
 
-  .filter-btn .badge {
-    font-size: 11px;
-    background: rgba(255,255,255,0.08);
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-left: auto;
+  .sidebar-item .item-label {
+    flex: 1;
   }
 
-  .filter-btn.active .badge {
-    background: rgba(108, 92, 231, 0.25);
+  .sidebar-item .item-check {
+    font-size: 12px;
+    color: var(--accent2);
+    visibility: hidden;
+    flex-shrink: 0;
+  }
+
+  .sidebar-item.active .item-check {
+    visibility: visible;
+  }
+
+  .sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 6px 8px;
+  }
+
+  /* === Main content area === */
+  .main-content {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+  }
+
+  .theme-toggle:hover {
+    border-color: var(--text2);
+    background: var(--surface2);
+  }
+
+  .theme-toggle .toggle-icon {
+    font-size: 16px;
+    line-height: 1;
   }
 
   /* Actions */
@@ -266,8 +364,8 @@
   }
 
   .btn-secondary:hover {
-    border-color: #444;
-    background: #262626;
+    border-color: #aaa;
+    background: var(--surface2);
   }
 
   .btn-danger {
@@ -356,87 +454,145 @@
   }
 
   /* Responsive */
+  @media (max-width: 1100px) {
+    body { height: auto; overflow: auto; }
+    .container { height: auto; padding-top: 40px; }
+    .top-bar { top: 12px; left: 12px; gap: 8px; }
+    .logo-fixed { font-size: 16px; }
+    .main-layout { flex-direction: column; flex: none; }
+    .sidebar {
+      flex-direction: row;
+      flex-wrap: wrap;
+      min-width: auto;
+      max-width: none;
+      gap: 6px;
+      padding: 10px 12px;
+    }
+    .sidebar-section { width: 100%; padding: 2px 4px; }
+    .sidebar-divider { display: none; }
+    .sidebar-item { width: auto; padding: 6px 10px; font-size: 12px; }
+    .columns { flex: none; }
+    .card { min-height: 0; overflow: visible; }
+    textarea { min-height: 200px; flex: none; }
+  }
+
+  @media (max-width: 768px) {
+    .columns { grid-template-columns: 1fr; }
+  }
+
   @media (max-width: 600px) {
-    body { padding: 20px 12px; }
-    .filters { gap: 8px; }
-    .filter-btn { padding: 8px 12px; font-size: 12px; }
+    body { padding: 12px; }
+    .sidebar { padding: 8px; gap: 4px; }
+    .sidebar-item { padding: 5px 8px; font-size: 11px; }
     .actions { flex-direction: column; }
     .btn { justify-content: center; }
     textarea { min-height: 150px; }
+    .top-bar { top: 12px; left: 12px; gap: 6px; }
+    .logo-fixed { font-size: 16px; }
+    .theme-toggle { font-size: 11px; padding: 4px 8px; }
   }
 
   /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #444; }
+  ::-webkit-scrollbar-thumb { background: #888; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #666; }
+
+  [data-theme="light"] ::-webkit-scrollbar-thumb { background: #ccc; }
+  [data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #aaa; }
 </style>
 </head>
 <body>
 
+<div class="top-bar">
+  <span class="logo-fixed">SuperCopy</span>
+  <button class="theme-toggle" id="themeToggle" title="切换亮色/暗色主题">
+    <span class="toggle-icon">☀</span>
+    <span>亮色</span>
+  </button>
+</div>
+
 <div class="container">
 
-  <!-- Header -->
-  <div class="header">
-    <div class="logo">
-      <div class="logo-icon">📋</div>
-      <span>SuperCopy</span>
-    </div>
-    <p class="subtitle">粘贴文本 · 一句话去除不需要的内容 · 一键复制</p>
-  </div>
+  <div class="main-layout">
 
-  <!-- Filters -->
-  <div class="filters" id="filters">
-    <button class="filter-btn active" data-filter="chinese">
-      <span class="icon">🀄</span> 去除中文
-      <span class="badge">CJK</span>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">文本过滤</div>
+    <button class="sidebar-item" data-filter="chinese">
+      <span class="item-icon">字</span>
+      <span class="item-label">去除中文</span>
+      <span class="item-check">✓</span>
     </button>
-    <button class="filter-btn active" data-filter="emoji">
-      <span class="icon">😀</span> 去除 Emoji
-      <span class="badge">😀</span>
+    <button class="sidebar-item" data-filter="emoji">
+      <span class="item-icon">:)</span>
+      <span class="item-label">去除 Emoji</span>
+      <span class="item-check">✓</span>
     </button>
-    <button class="filter-btn" data-filter="numbers">
-      <span class="icon">🔢</span> 去除数字
-      <span class="badge">0-9</span>
+    <button class="sidebar-item" data-filter="numbers">
+      <span class="item-icon">#</span>
+      <span class="item-label">去除数字</span>
+      <span class="item-check">✓</span>
     </button>
-    <button class="filter-btn" data-filter="punctuation">
-      <span class="icon">〰️</span> 去除标点
-      <span class="badge">，。</span>
+    <button class="sidebar-item" data-filter="punctuation">
+      <span class="item-icon">~</span>
+      <span class="item-label">去除标点</span>
+      <span class="item-check">✓</span>
     </button>
-    <button class="filter-btn" data-filter="whitespace">
-      <span class="icon">␣</span> 压缩空格
-      <span class="badge">\\s</span>
+    <button class="sidebar-item" data-filter="whitespace">
+      <span class="item-icon">␣</span>
+      <span class="item-label">压缩空格</span>
+      <span class="item-check">✓</span>
     </button>
-    <button class="filter-btn" data-filter="special">
-      <span class="icon">※</span> 去除特殊符号
-      <span class="badge">#@</span>
+    <button class="sidebar-item" data-filter="special">
+      <span class="item-icon">※</span>
+      <span class="item-label">去除特殊符号</span>
+      <span class="item-check">✓</span>
     </button>
-    <button class="filter-btn active" data-filter="tracking">
-      <span class="icon">🔗</span> 去除追踪标记
-      <span class="badge">?s=</span>
+    <button class="sidebar-item" data-filter="weibo">
+      <span class="item-icon">@</span>
+      <span class="item-label">去除微博格式</span>
+      <span class="item-check">✓</span>
     </button>
-    <button class="filter-btn" data-filter="expand">
-      <span class="icon">🔀</span> 展开短链
-      <span class="badge">b23.tv</span>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">链接处理</div>
+    <button class="sidebar-item" data-filter="tracking">
+      <span class="item-icon">&amp;</span>
+      <span class="item-label">去除追踪标记</span>
+      <span class="item-check">✓</span>
     </button>
-    <button class="filter-btn" data-filter="bvav">
-      <span class="icon">🔄</span> BV⇄AV
-      <span class="badge">BV1</span>
+    <button class="sidebar-item" data-filter="expand">
+      <span class="item-icon">&#187;</span>
+      <span class="item-label">展开短链</span>
+      <span class="item-check">✓</span>
     </button>
-    <button class="filter-btn" data-filter="extracturl">
-      <span class="icon">📋</span> 口令提取
-      <span class="badge">链接</span>
+    <button class="sidebar-item" data-filter="extracturl">
+      <span class="item-icon">&#9632;</span>
+      <span class="item-label">口令提取</span>
+      <span class="item-check">✓</span>
     </button>
-    <button class="filter-btn" data-filter="urldecode">
-      <span class="icon">🔓</span> URL解码
-      <span class="badge">%xx</span>
+    <button class="sidebar-item" data-filter="bvav">
+      <span class="item-icon">&#8660;</span>
+      <span class="item-label">BV⇄AV 互转</span>
+      <span class="item-check">✓</span>
     </button>
-  </div>
+    <button class="sidebar-item" data-filter="urldecode">
+      <span class="item-icon">%</span>
+      <span class="item-label">URL 解码</span>
+      <span class="item-check">✓</span>
+    </button>
+  </aside>
+
+  <!-- Main content -->
+  <div class="main-content">
+
+  <div class="columns">
 
   <!-- Input -->
   <div class="card">
     <div class="card-header">
-      <span class="card-title">📥 输入文本</span>
+      <span class="card-title">输入文本</span>
       <button class="btn btn-danger" id="clearBtn" style="padding: 6px 12px; font-size: 12px;">清空</button>
     </div>
     <textarea
@@ -455,7 +611,7 @@
   <!-- Output -->
   <div class="card">
     <div class="card-header">
-      <span class="card-title">📤 处理后文本</span>
+      <span class="card-title">处理后文本</span>
       <span style="font-size: 12px; color: var(--text2);" id="diffInfo"></span>
     </div>
     <textarea
@@ -472,22 +628,28 @@
 
     <!-- Removed content preview -->
     <div class="removed-preview" id="removedPreview">
-      <div class="title">🗑️ 被去除的内容</div>
+      <div class="title">被去除的内容</div>
       <div class="content" id="removedContent"></div>
     </div>
 
     <div class="actions">
       <button class="btn btn-copy" id="copyBtn">
-        <span>📋</span> 复制结果
+        复制结果
       </button>
       <button class="btn btn-secondary" id="pasteBtn">
-        <span>📎</span> 从剪贴板粘贴
+        从剪贴板粘贴
       </button>
       <button class="btn btn-secondary" id="swapBtn">
-        <span>🔄</span> 设为输入
+        设为输入
       </button>
     </div>
   </div>
+
+  </div><!-- /columns -->
+
+  </div><!-- /main-content -->
+
+  </div><!-- /main-layout -->
 
 </div>
 
@@ -499,7 +661,7 @@
   // --- DOM ---
   const $input    = document.getElementById('input');
   const $output   = document.getElementById('output');
-  const $filters  = document.getElementById('filters');
+  const $sidebar  = document.getElementById('sidebar');
   const $copyBtn  = document.getElementById('copyBtn');
   const $clearBtn = document.getElementById('clearBtn');
   const $pasteBtn = document.getElementById('pasteBtn');
@@ -522,8 +684,9 @@
   const $emojiCountStat = document.getElementById('emojiCountStat');
 
   // --- State ---
+  const allSidebarItems = [...$sidebar.querySelectorAll('.sidebar-item')];
   const activeFilters = new Set(
-    [...$filters.querySelectorAll('.filter-btn.active')].map(b => b.dataset.filter)
+    allSidebarItems.filter(b => b.classList.contains('active')).map(b => b.dataset.filter)
   );
 
   // --- Regex patterns ---
@@ -534,6 +697,7 @@
     punctuation: /[\p{P}\p{S}]/gu,
     whitespace:  /\s{2,}/g,
     special:     /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/g,
+    weibo:       /\[(?:\/?cp|图片|表情|视频|链接|语音|音乐|投票)\]/g,
   };
 
   // --- Tracking params to strip from URLs ---
@@ -658,6 +822,7 @@
     'toutiao.com', 'www.toutiao.com',
     'music.163.com', 'y.music.163.com',
     'store.steampowered.com',
+    'tiktok.com', 'www.tiktok.com',
     'youtube.com', 'www.youtube.com', 'youtu.be',
     'fanbox.cc',
     'amazon.co.jp', 'amazon.com', 'amazon.cn', 'amazon.co.uk', 'amazon.de',
@@ -878,19 +1043,20 @@
     bvav:        'BV⇄AV',
     extracturl:  '口令提取',
     urldecode:   'URL解码',
+    weibo:       '微博格式',
   };
 
-  // --- Filter button clicks ---
-  $filters.addEventListener('click', e => {
-    const btn = e.target.closest('.filter-btn');
-    if (!btn) return;
-    const key = btn.dataset.filter;
+  // --- Sidebar: item clicks (toggle filter) ---
+  $sidebar.addEventListener('click', e => {
+    const item = e.target.closest('.sidebar-item');
+    if (!item) return;
+    const key = item.dataset.filter;
     if (activeFilters.has(key)) {
       activeFilters.delete(key);
-      btn.classList.remove('active');
+      item.classList.remove('active');
     } else {
       activeFilters.add(key);
-      btn.classList.add('active');
+      item.classList.add('active');
     }
     process();
   });
@@ -1214,26 +1380,26 @@
   $copyBtn.addEventListener('click', async () => {
     const text = $output.value;
     if (!text) {
-      showToast('⚠️ 没有可复制的内容', 'warning');
+      showToast('! 没有可复制的内容', 'warning');
       return;
     }
     try {
       await navigator.clipboard.writeText(text);
       $copyBtn.classList.add('copied');
-      $copyBtn.innerHTML = '<span>✅</span> 已复制!';
-      showToast('✅ 已复制到剪贴板');
+      $copyBtn.innerHTML = '<span>✓</span> 已复制!';
+      showToast('✓ 已复制到剪贴板');
       setTimeout(() => {
         $copyBtn.classList.remove('copied');
-        $copyBtn.innerHTML = '<span>📋</span> 复制结果';
+        $copyBtn.innerHTML = '复制结果';
       }, 2000);
     } catch {
       // Fallback
       $output.select();
       document.execCommand('copy');
-      showToast('✅ 已复制到剪贴板');
+      showToast('✓ 已复制到剪贴板');
       setTimeout(() => {
         $copyBtn.classList.remove('copied');
-        $copyBtn.innerHTML = '<span>📋</span> 复制结果';
+        $copyBtn.innerHTML = '复制结果';
       }, 2000);
     }
   });
@@ -1245,10 +1411,10 @@
       if (text) {
         $input.value = text;
         process();
-        showToast('📎 已从剪贴板粘贴');
+        showToast('已从剪贴板粘贴');
       }
     } catch {
-      showToast('⚠️ 无法读取剪贴板，请手动粘贴', 'warning');
+      showToast('! 无法读取剪贴板，请手动粘贴', 'warning');
     }
   });
 
@@ -1257,7 +1423,7 @@
     if (!$output.value.trim()) return;
     $input.value = $output.value;
     process();
-    showToast('🔄 已将处理结果设为输入');
+    showToast('已将处理结果设为输入');
   });
 
   // --- Clear ---
@@ -1265,7 +1431,7 @@
     $input.value = '';
     $output.value = '';
     process();
-    showToast('🗑️ 已清空');
+    showToast('已清空');
   });
 
   // --- Toast ---
@@ -1300,11 +1466,34 @@
     }
   });
 
-  // --- Initial process ---
-  process();
+  // --- Theme toggle ---
+  const themeToggle = document.getElementById('themeToggle');
+  const STORAGE_KEY = 'supercopy-theme';
 
-  // --- Demo content ---
-  $input.value = '你好世界！Hello World! 🌍✨\n\n这段文本包含中文、Emoji 表情 😀🎉、数字 12345、以及特殊符号 @#$%。\n\nThis is a demo text with Chinese characters 中文内容 and various emojis 👋🚀💡.\n\n--- 追踪链接示例 ---\n\n酷安链接 (去除追踪参数 s=)：\nhttps://www.coolapk.com/feed/72893748?s=M2MwMmJkMTYyM2EzYzYwZzZhNjE4Yjc5ega1651b\n\n带 UTM 的链接：\nhttps://example.com/article?utm_source=wechat&utm_medium=share&utm_campaign=test&id=123\n\nB站链接 (去除追踪参数)：\nhttps://www.bilibili.com/video/BV1xx411c7mD?spm_id_from=333.337.0.0&buvid=XYZ123\n\n点击上方过滤按钮来选择性去除内容，然后一键复制结果！';
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(STORAGE_KEY, theme);
+    const icon = themeToggle.querySelector('.toggle-icon');
+    const label = themeToggle.querySelector('span:last-child');
+    if (theme === 'light') {
+      icon.textContent = '☾';
+      label.textContent = '暗色';
+    } else {
+      icon.textContent = '☀';
+      label.textContent = '亮色';
+    }
+  }
+
+  // Load saved theme
+  const savedTheme = localStorage.getItem(STORAGE_KEY) || 'dark';
+  setTheme(savedTheme);
+
+  themeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    setTheme(current === 'light' ? 'dark' : 'light');
+  });
+
+  // --- Initial process ---
   process();
 })();
 </script>
