@@ -94,8 +94,12 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
-    background: linear-gradient(to bottom, var(--bg) 60%, transparent);
+    padding: 10px 16px;
+    /* 毛玻璃顶栏 */
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
     pointer-events: none;
   }
 
@@ -107,7 +111,12 @@
     font-size: 20px;
     font-weight: 700;
     letter-spacing: -0.5px;
-    color: var(--accent2);
+    /* 渐变文字 */
+    background: linear-gradient(120deg, var(--accent2), var(--accent) 70%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
   }
 
   /* Two-column layout */
@@ -125,7 +134,8 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 24px;
-    transition: border-color var(--transition);
+    box-shadow: 0 1px 2px var(--shadow-color), 0 12px 32px -20px var(--shadow-color);
+    transition: border-color var(--transition), box-shadow var(--transition);
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -134,6 +144,7 @@
 
   .card:focus-within {
     border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.10), 0 12px 32px -20px var(--shadow-color);
   }
 
   .card-header {
@@ -183,16 +194,22 @@
   /* Stats bar */
   .stats {
     display: flex;
-    gap: 20px;
+    flex-wrap: wrap;
+    gap: 8px;
     margin-top: 12px;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text2);
   }
 
+  /* 统计项做成小胶囊 */
   .stat {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
+    padding: 3px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
   }
 
   .stat-value {
@@ -227,6 +244,9 @@
   }
 
   .sidebar-section {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 10px;
     font-weight: 700;
     color: var(--text2);
@@ -234,6 +254,17 @@
     letter-spacing: 1.5px;
     padding: 6px 8px 4px;
     margin-top: 4px;
+  }
+
+  /* 分组标题前的小竖条 */
+  .sidebar-section::before {
+    content: '';
+    width: 3px;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: 0.7;
+    flex-shrink: 0;
   }
 
   .sidebar-section:first-child {
@@ -253,7 +284,7 @@
     font-size: 12px;
     font-family: inherit;
     cursor: pointer;
-    transition: all 0.12s ease;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
     text-align: left;
     white-space: nowrap;
   }
@@ -263,9 +294,14 @@
     color: var(--text);
   }
 
+  .sidebar-item:active {
+    transform: scale(0.96);
+  }
+
   .sidebar-item.active {
     color: var(--accent2);
     background: rgba(108, 92, 231, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(108, 92, 231, 0.28);
   }
 
   .sidebar-item .item-icon {
@@ -273,6 +309,11 @@
     width: 18px;
     text-align: center;
     flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .sidebar-item.active .item-icon {
+    transform: scale(1.15);
   }
 
   .sidebar-item .item-label {
@@ -282,12 +323,15 @@
   .sidebar-item .item-check {
     font-size: 12px;
     color: var(--accent2);
-    visibility: hidden;
     flex-shrink: 0;
+    opacity: 0;
+    transform: scale(0.3) translateX(6px);
+    transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .sidebar-item.active .item-check {
-    visibility: visible;
+    opacity: 1;
+    transform: scale(1) translateX(0);
   }
 
   .sidebar-divider {
@@ -450,10 +494,11 @@
     border: 1px solid var(--green);
     color: var(--green);
     padding: 12px 24px;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 14px;
     font-weight: 600;
-    z-index: 100;
+    z-index: 200;
+    box-shadow: 0 8px 30px -8px var(--shadow-color);
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: none;
   }
@@ -469,17 +514,20 @@
     .top-bar { padding: 8px 12px; gap: 8px; }
     .logo-fixed { font-size: 16px; }
     .main-layout { flex-direction: column; flex: none; }
+    /* 窄屏：侧边栏改为整齐的网格，每个功能项等宽对齐 */
     .sidebar {
-      flex-direction: row;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
       min-width: auto;
       max-width: none;
       gap: 6px;
       padding: 10px 12px;
+      overflow-y: visible;
     }
-    .sidebar-section { width: 100%; padding: 2px 4px; }
+    .sidebar-section { grid-column: 1 / -1; padding: 4px 4px 0; margin-top: 2px; }
+    .sidebar-section:first-child { margin-top: 0; }
     .sidebar-divider { display: none; }
-    .sidebar-item { width: auto; padding: 6px 10px; font-size: 12px; }
+    .sidebar-item { width: auto; padding: 7px 10px; font-size: 12px; }
     .columns { flex: none; }
     .card { min-height: 0; overflow: visible; }
     textarea { min-height: 200px; flex: none; }
@@ -491,14 +539,33 @@
 
   @media (max-width: 600px) {
     body { padding: 12px; }
-    .sidebar { padding: 8px; gap: 4px; }
-    .sidebar-item { padding: 5px 8px; font-size: 11px; }
+    /* 手机竖屏：固定两列，视觉上最稳定 */
+    .sidebar { grid-template-columns: 1fr 1fr; padding: 8px; gap: 5px; }
+    .sidebar-item { padding: 7px 8px; font-size: 12px; }
+    .sidebar-item .item-icon { font-size: 13px; width: 16px; }
     .actions { flex-direction: column; }
     .btn { justify-content: center; }
     textarea { min-height: 150px; }
     .top-bar { padding: 8px 12px; gap: 6px; }
     .logo-fixed { font-size: 16px; }
     .theme-toggle { font-size: 11px; padding: 4px 8px; }
+  }
+
+  /* 文本选中色 */
+  ::selection {
+    background: rgba(108, 92, 231, 0.35);
+  }
+
+  /* 键盘导航焦点环 */
+  .btn:focus-visible,
+  .sidebar-item:focus-visible,
+  .theme-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .theme-toggle:hover {
+    border-color: var(--accent);
   }
 
   /* Scrollbar */
@@ -606,7 +673,7 @@
     </div>
     <textarea
       id="input"
-      placeholder="在此粘贴你的文本...&#10;&#10;支持快捷键：&#10;  Ctrl+V  粘贴&#10;  Ctrl+A  全选"
+      placeholder="在此粘贴你的文本...&#10;&#10;支持快捷键：&#10;  Ctrl+Shift+V  从剪贴板粘贴&#10;  Ctrl+Enter  复制结果"
     ></textarea>
     <div class="stats">
       <div class="stat">字符 <span class="stat-value" id="inputChars">0</span></div>
@@ -707,7 +774,7 @@
     emoji:       /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{2934}\u{2935}\u{25AA}\u{25AB}\u{25B6}\u{25C0}\u{25FB}-\u{25FE}\u{200D}\u{FE0F}\u{20E3}\u{1F004}\u{1F0CF}\u{1F18E}]/gu,
     numbers:     /\d+/g,
     punctuation: /[\p{P}\p{S}]/gu,
-    whitespace:  /\s{2,}/g,
+    whitespace:  /[^\S\n]{2,}/g,  // 行内空白（不吞换行，换行单独处理）
     special:     /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/g,
     weibo:       /\[(?:\/?cp|图片|表情|视频|链接|语音|音乐|投票)\]/g,
   };
@@ -802,7 +869,14 @@
   // --- Expand short links by calling local server API ---
   // Matches all URLs; the server follows redirects and returns the final URL.
   // Non-short URLs just resolve to themselves (no-op).
-  const URL_REGEX = /(?:https?:\/\/|https?%3A%2F%2F)[^\s<>^`\[\]]+/gi;
+  // 排除全角标点：分享文案里 URL 后常紧跟 ，。） 等，不能算进链接里
+  const URL_REGEX = /(?:https?:\/\/|https?%3A%2F%2F)[^\s<>^`\[\]，。、；：！？（）【】《》「」『』“”‘’…]+/gi;
+  // 宽松版：额外匹配 www. 开头和裸域名（口令提取、URL 保护用）
+  const ANY_URL_REGEX = /(?:https?:\/\/|https?%3A%2F%2F|www\.|[a-z0-9][-a-z0-9]*\.[a-z]{2,}\/)[^\s<>^`\[\]，。、；：！？（）【】《》「」『』“”‘’…]+/gi;
+
+  // 展开结果缓存：url → { to: 展开后URL|null, blocked: bool }
+  // 短链的展开结果基本不变，缓存后打字过程中不会反复请求服务器
+  const expandCache = new Map();
 
   async function expandShortUrls(text) {
     const matches = text.match(URL_REGEX);
@@ -821,11 +895,23 @@
     // Deduplicate URLs to avoid redundant API calls
     const uniqueUrls = [...new Set(matches)];
 
+    // 先查缓存，只请求没见过的 URL
+    const expansions = [];    // {from, to} — 本次要应用的替换
+    const blockedUrls = [];   // Track URLs blocked by anti-bot
+    const toFetch = [];
+    for (const u of uniqueUrls) {
+      const cached = expandCache.get(u);
+      if (cached) {
+        if (cached.blocked) blockedUrls.push(u);
+        else if (cached.to) expansions.push({ from: u, to: cached.to });
+      } else {
+        toFetch.push(u);
+      }
+    }
+
     // Expand with limited concurrency (2 at a time) to avoid overwhelming server
-    const expansions = [];
-    const blockedUrls = [];  // Track URLs blocked by anti-bot
-    for (let i = 0; i < uniqueUrls.length; i += 2) {
-      const batch = uniqueUrls.slice(i, i + 2);
+    for (let i = 0; i < toFetch.length; i += 2) {
+      const batch = toFetch.slice(i, i + 2);
       const results = await Promise.all(batch.map(async (u) => {
         try {
           const apiUrl = '/expand?url=' + encodeURIComponent(u);
@@ -833,27 +919,32 @@
           if (resp.ok) {
             const data = await resp.json();
             if (data.expanded && data.expanded !== u) {
-              return { from: u, to: normalizeUrl(data.expanded) };
+              const to = normalizeUrl(data.expanded);
+              expandCache.set(u, { to, blocked: false });
+              return { from: u, to };
             }
             // Server returned same URL — check if it was blocked
-            if (data.note && data.note.toLowerCase().includes('block')) {
-              blockedUrls.push(u);
-            }
+            const blocked = !!(data.note && data.note.toLowerCase().includes('block'));
+            expandCache.set(u, { to: null, blocked });
+            if (blocked) blockedUrls.push(u);
           }
         } catch (e) {
+          // 网络失败不入缓存，下次处理时重试
           console.warn('短链展开失败:', u, e.message);
         }
         return null;
       }));
-      expansions.push(...results);
+      expansions.push(...results.filter(Boolean));
     }
 
     let result = text;
+    // 长 URL 先替换，避免某条短链恰好是另一条的前缀时误伤
+    expansions.sort((a, b) => b.from.length - a.from.length);
     for (const e of expansions) {
-      if (e) result = result.replace(e.from, e.to);
+      result = result.split(e.from).join(e.to); // 替换全部出现位置，且不解释 $ 等特殊符号
     }
 
-    // Append blocked warning only when nothing was expanded at all
+    // 所有链接都没展开成功、且存在被拦截的，才在文本里追加提示
     if (blockedUrls.length > 0 && expansions.length === 0) {
       result = result.trim();
       if (result) result += '\n\n';
@@ -864,39 +955,25 @@
   }
 
   // --- Process ---
+  // 序号守卫：短链展开可能耗时较长，期间用户再次输入会触发新一轮 process，
+  // 旧请求完成后必须丢弃，否则会用旧结果覆盖新结果
+  let processSeq = 0;
+
   async function process() {
+    const seq = ++processSeq;
     const raw = $input.value;
     let result = raw;
     const removedParts = [];
 
-    // Enforce processing order: extracturl → expand → tracking
-    const orderedKeys = [...activeFilters];
-    const orderPriority = ['extracturl', 'expand', 'tracking'];
-    // Move these three to the front in priority order, keeping others stable
-    for (let p = orderPriority.length - 1; p >= 0; p--) {
-      const key = orderPriority[p];
-      const idx = orderedKeys.indexOf(key);
-      if (idx > -1) {
-        orderedKeys.splice(idx, 1);
-        orderedKeys.unshift(key);
-      }
-    }
-    // Now the first items are extracturl, expand, tracking (if present) in order
+    // 阶段一：链接处理，顺序固定：口令提取 → 展开短链 → 去追踪 → BV/AV
+    const LINK_KEYS = ['extracturl', 'expand', 'tracking', 'bvav'];
+    const linkKeys = LINK_KEYS.filter(k => activeFilters.has(k));
+    const textKeys = [...activeFilters].filter(k => !LINK_KEYS.includes(k) && k !== 'urldecode');
 
-    for (const key of orderedKeys) {
-      if (key === 'urldecode') continue;
-      if (key === 'whitespace') {
-        // Special: compress whitespace instead of remove
-        const before = result;
-        result = result.replace(PATTERNS.whitespace, ' ');
-        result = result.replace(/^\s+|\s+$/g, ''); // trim as well
-        if (before !== result) {
-          removedParts.push('多余空格');
-        }
-      } else if (key === 'extracturl') {
+    for (const key of linkKeys) {
+      if (key === 'extracturl') {
         // Extract URLs from share phrases (抖音口令 etc.)
-        const urlRegex = /(?:https?:\/\/|https?%3A%2F%2F|www\.|[a-z0-9][-a-z0-9]*\.[a-z]{2,}\/)[^\s<>^`\[\]]+/gi;
-        const urls = result.match(urlRegex);
+        const urls = result.match(ANY_URL_REGEX);
         if (urls && urls.length > 0) {
           result = [...new Set(urls)].join('\n');
           removedParts.push(`[口令提取: ${urls.length} 个链接]`);
@@ -905,19 +982,13 @@
         // Expand short links (b23.tv etc.)
         const before = result;
         const expandResult = await expandShortUrls(result);
+        if (seq !== processSeq) return; // 已有更新的输入，放弃本次结果
         result = expandResult.text;
         if (before !== result) {
           removedParts.push('[短链已展开]');
         }
         if (expandResult.blockedUrls.length > 0) {
           removedParts.push(`[反爬拦截: ${expandResult.blockedUrls.length} 条短链未能展开]`);
-        }
-      } else if (key === 'bvav') {
-        // Bilibili BV ↔ AV conversion
-        const before = result;
-        result = convertBvAv(result);
-        if (before !== result) {
-          removedParts.push('[BV⇄AV 已转换]');
         }
       } else if (key === 'tracking') {
         // Strip tracking params from URLs
@@ -926,6 +997,38 @@
         if (before !== result) {
           const strippedCount = before.length - result.length;
           removedParts.push(`[追踪参数: 去除 ${strippedCount} 个字符]`);
+        }
+      } else if (key === 'bvav') {
+        // Bilibili BV ↔ AV conversion
+        const before = result;
+        result = convertBvAv(result);
+        if (before !== result) {
+          removedParts.push('[BV⇄AV 已转换]');
+        }
+      }
+    }
+
+    // 阶段二：文本过滤。先把 URL 换成占位符保护起来，
+    // 避免去数字/标点/特殊符号把链接绞碎。
+    // 占位符只含私有区字符 + 小写字母，不会被任何过滤规则命中。
+    const savedUrls = [];
+    if (textKeys.length > 0) {
+      result = result.replace(ANY_URL_REGEX, m => {
+        const token = '' + String(savedUrls.length).replace(/\d/g, d => 'abcdefghij'[+d]) + '';
+        savedUrls.push(m);
+        return token;
+      });
+    }
+
+    for (const key of textKeys) {
+      if (key === 'whitespace') {
+        // 行内连续空白压成一个空格；3+ 连续换行压成一个空行
+        const before = result;
+        result = result.replace(PATTERNS.whitespace, ' ');
+        result = result.replace(/\n{3,}/g, '\n\n');
+        result = result.replace(/^\s+|\s+$/g, ''); // trim as well
+        if (before !== result) {
+          removedParts.push('多余空格');
         }
       } else {
         const pattern = PATTERNS[key];
@@ -942,9 +1045,12 @@
       }
     }
 
-    // Remove blank lines (optional cleanup)
-    if (activeFilters.has('whitespace')) {
-      result = result.replace(/\n{3,}/g, '\n\n');
+    // 还原被保护的 URL
+    if (savedUrls.length > 0) {
+      result = result.replace(/([a-j]+)/g, (m, code) => {
+        const idx = Number([...code].map(c => 'abcdefghij'.indexOf(c)).join(''));
+        return savedUrls[idx] !== undefined ? savedUrls[idx] : m;
+      });
     }
 
     // URL decode runs LAST — after tracking params are already stripped,
@@ -999,6 +1105,13 @@
     }
   }
 
+  // 按 grapheme（用户可见字符）计数；UTF-16 length 会把一个 emoji 算成 2 个
+  const graphemeSegmenter = (typeof Intl !== 'undefined' && Intl.Segmenter) ? new Intl.Segmenter() : null;
+  function countGraphemes(s) {
+    if (graphemeSegmenter) return [...graphemeSegmenter.segment(s)].length;
+    return [...s].length; // 退化为按码点计数
+  }
+
   function updateStats(raw, result) {
     $inputChars.textContent = raw.length;
     $inputWords.textContent = raw.trim() ? raw.trim().split(/\s+/).length : 0;
@@ -1035,10 +1148,10 @@
       $chineseCountStat.style.display = 'none';
     }
 
-    // Emoji count
+    // Emoji count（按用户可见字符计，组合 emoji 如 👨‍👩‍👧 算 1 个）
     const emojiMatches = raw.match(PATTERNS.emoji);
     if (emojiMatches && emojiMatches.length > 0) {
-      $emojiCount.textContent = emojiMatches.join('').length;
+      $emojiCount.textContent = countGraphemes(emojiMatches.join(''));
       $emojiCountStat.style.display = '';
     } else {
       $emojiCountStat.style.display = 'none';
@@ -1137,8 +1250,8 @@
       e.preventDefault();
       $pasteBtn.click();
     }
-    // Ctrl+Shift+C to copy result
-    if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+    // Ctrl+Enter to copy result（Ctrl+Shift+C 会和浏览器开发者工具的"检查元素"冲突）
+    if (e.ctrlKey && !e.shiftKey && e.key === 'Enter') {
       e.preventDefault();
       $copyBtn.click();
     }

@@ -13,7 +13,7 @@ import gzip
 import io
 
 PORT = 8080
-HOST = '0.0.0.0'
+HOST = '0.0.0.0'  # 局域网可访问；如只需本机访问改为 '127.0.0.1'
 
 # Module-level cookie-enabled opener (shared across requests)
 _cookie_jar = http.cookiejar.CookieJar()
@@ -133,47 +133,54 @@ class SuperCopyHandler(http.server.SimpleHTTPRequestHandler):
             ]
             return sum(1 for s in indicators if s in lower) >= 1
 
-        def follow_redirects(start_url, check_js=True):
-            """Follow HTTP redirect chain and return (final_url, blocked).
-            blocked=True means we hit a captcha/login wall."""
-            final_url = start_url
-            for method in ['GET', 'HEAD']:
+        def follow_redirects(start_url):
+            """Follow the redirect chain and return (final_url, blocked).
+            blocked=True means we hit a captcha/login wall.
+
+            urllib already follows the entire HTTP redirect chain inside a
+            single open() (geturl() is the end of the chain), so no extra
+            confirmation fetch is needed. At most two fetches happen: the
+            initial one, plus one more if the landing page carries a
+            JS/meta redirect."""
+            current = start_url
+            checked_js = False
+            for _ in range(3):  # safety bound; normally exits in 1-2 iterations
                 try:
-                    resp = make_request(start_url, method)
-                    resp_url = resp.geturl()
-
-                    # Check if we've been redirected to a captcha / login page
-                    if _is_captcha_or_login(resp_url):
-                        resp.close()
-                        return (start_url, True)  # blocked
-
-                    if resp_url != start_url:
-                        # HTTP redirect followed — recurse without JS extraction
-                        final_url = resp_url
-                    elif check_js and method == 'GET':
-                        # Only extract JS/meta redirects from the original short link page
-                        body = _decode_body(resp)
-                        # Check body for captcha even if URL didn't change
-                        if _body_looks_like_captcha(body):
-                            resp.close()
-                            return (start_url, True)  # blocked
-                        js_target = extract_js_redirect(body)
-                        if js_target:
-                            final_url = js_target
-                    resp.close()
-                    if final_url != start_url:
-                        # Follow HTTP chain further (no more JS extraction)
-                        return follow_redirects(final_url, check_js=False)
-                    break
+                    resp = make_request(current)
                 except urllib.error.HTTPError as e:
-                    err_url = e.geturl() if hasattr(e, 'geturl') else start_url
+                    err_url = e.geturl() if hasattr(e, 'geturl') else current
                     if _is_captcha_or_login(err_url):
                         return (start_url, True)  # blocked
-                    if err_url != start_url:
-                        return follow_redirects(err_url, check_js=False)
+                    return (err_url, False)
                 except Exception:
-                    continue
-            return (final_url, False)
+                    # GET failed entirely (timeout etc.) — try HEAD once
+                    try:
+                        resp = make_request(current, 'HEAD')
+                    except Exception:
+                        return (current, False)
+
+                resp_url = resp.geturl()
+                if _is_captcha_or_login(resp_url):
+                    resp.close()
+                    return (start_url, True)  # blocked
+
+                if resp_url == current and not checked_js:
+                    # No HTTP redirect — the short-link page itself may
+                    # carry a JS/meta redirect (m.tb.cn, reurl.cc etc.)
+                    checked_js = True
+                    body = _decode_body(resp)
+                    resp.close()
+                    if _body_looks_like_captcha(body):
+                        return (start_url, True)  # blocked
+                    js_target = extract_js_redirect(body)
+                    if js_target and js_target != current:
+                        current = js_target
+                        continue  # follow the JS target's own HTTP chain
+                    return (current, False)
+
+                resp.close()
+                return (resp_url, False)
+            return (current, False)
 
         try:
             final_url, blocked = follow_redirects(url)

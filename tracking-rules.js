@@ -53,7 +53,7 @@ const TRACKING_PARAMS = [
   'refer_share_form', '_x_share_id', 'refer_page_sn', 'uin',
   // 京东
   'jxsid', 'jdsn', 'mpja', 'mpjb', 'mpjc',
-  'jd_pop', 'jd_track', 'ad_od', 'utm_term', 'utm_user',
+  'jd_pop', 'jd_track', 'ad_od', 'utm_user',
   // Bilibili
   'buvid', 'buvid3', 'buvid4', 'buvid5',
   'buvid6', 'buvid7', 'buvid8',
@@ -87,7 +87,7 @@ const TRACKING_PARAMS = [
   // 红果短剧
   'zlink', 'gd_label', 'share_type', 'use_open_launch_app_novel',
   'user_id', 'share_timestamp', 'source_channel', 'entrance',
-  'report_params', 'ug_token', 'did',
+  'report_params', 'ug_token',
   // 小红书
   'xhs_share_id', 'xhs_source', 'xhsshare', 'shareRedId', 'shareredid',
   'xsec_source', 'app_platform', 'app_version', 'apptime',
@@ -95,7 +95,7 @@ const TRACKING_PARAMS = [
   'share_channel', 'share_redirect_url',
   // 通用分享 / 导航
   'navhide', 'header', 'footer', 'hidebar',
-  'shareto', 'sharetype', 'shareid',
+  'shareto',
   'redirect', 'redirect_url', 'redir',
   'session_id', 'sid', 'token', 'access_token',
   'country', 'region',
@@ -134,6 +134,7 @@ const AGGRESSIVE_DOMAINS = [
   'lofter.com',
   'toutiao.com', 'www.toutiao.com',
   'music.163.com', 'y.music.163.com',
+  'y.qq.com',
   'store.steampowered.com',
   'tiktok.com', 'www.tiktok.com',
   'youtube.com', 'www.youtube.com', 'youtu.be',
@@ -234,6 +235,16 @@ function getDomainKeepParams(domain) {
   if (/douban\.com$/.test(domain)) {
     return new Set(['uri']);
   }
+  if (/(?:^|\.)y\.qq\.com$/.test(domain)) {
+    // QQ音乐：只保留歌曲/专辑/歌单 ID，其余（含 type、appshare 等）全清
+    return new Set(['songmid', 'songid', 'albummid', 'albumid', 'id', 'mid']);
+  }
+  if (/youtube\.com$|youtu\.be$/.test(domain)) {
+    return new Set([...KEEP_PARAMS, 't', 'list', 'index']); // 追加：时间戳、播放列表
+  }
+  if (/bilibili\.com$|b23\.tv$/.test(domain)) {
+    return new Set([...KEEP_PARAMS, 't']); // 追加：跳转时间点
+  }
   return null;
 }
 
@@ -278,7 +289,8 @@ function simplifyHongguoZlink(url) {
 
 // --- 核心函数：清除文本中所有 URL 的追踪参数 ---
 function stripTrackingParams(text) {
-  const urlRegex = /(?:https?:\/\/|https?%3A%2F%2F|www\.|[a-z0-9][-a-z0-9]*\.[a-z]{2,}\/)[^\s<>^`\[\]]+/gi;
+  // 排除全角标点：中文文案里 URL 后常紧跟 ，。） 等，不能算进链接
+  const urlRegex = /(?:https?:\/\/|https?%3A%2F%2F|www\.|[a-z0-9][-a-z0-9]*\.[a-z]{2,}\/)[^\s<>^`\[\]，。、；：！？（）【】《》「」『』“”‘’…]+/gi;
 
   return text.replace(urlRegex, (url) => {
     let normalized = url;
