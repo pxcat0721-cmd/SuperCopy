@@ -81,17 +81,26 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    padding-top: 50px;
   }
 
   /* Header */
   .top-bar {
     position: fixed;
-    top: 16px;
-    left: 16px;
+    top: 0;
+    left: 0;
+    right: 0;
     z-index: 100;
     display: flex;
     align-items: center;
     gap: 12px;
+    padding: 12px 16px;
+    background: linear-gradient(to bottom, var(--bg) 60%, transparent);
+    pointer-events: none;
+  }
+
+  .top-bar > * {
+    pointer-events: auto;
   }
 
   .logo-fixed {
@@ -457,7 +466,7 @@
   @media (max-width: 1100px) {
     body { height: auto; overflow: auto; }
     .container { height: auto; padding-top: 40px; }
-    .top-bar { top: 12px; left: 12px; gap: 8px; }
+    .top-bar { padding: 8px 12px; gap: 8px; }
     .logo-fixed { font-size: 16px; }
     .main-layout { flex-direction: column; flex: none; }
     .sidebar {
@@ -487,7 +496,7 @@
     .actions { flex-direction: column; }
     .btn { justify-content: center; }
     textarea { min-height: 150px; }
-    .top-bar { top: 12px; left: 12px; gap: 6px; }
+    .top-bar { padding: 8px 12px; gap: 6px; }
     .logo-fixed { font-size: 16px; }
     .theme-toggle { font-size: 11px; padding: 4px 8px; }
   }
@@ -623,7 +632,7 @@
       <div class="stat">字符 <span class="stat-value" id="outputChars">0</span></div>
       <div class="stat">单词 <span class="stat-value" id="outputWords">0</span></div>
       <div class="stat">行 <span class="stat-value" id="outputLines">0</span></div>
-      <div class="stat" style="color: var(--green);">已去除 <span class="stat-value" id="removedCount" style="color: var(--green);">0</span> 个字符</div>
+      <div class="stat" id="diffCountStat"><span id="diffLabel">已去除</span> <span class="stat-value" id="removedCount">0</span> 个字符</div>
     </div>
 
     <!-- Removed content preview -->
@@ -656,6 +665,7 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<script src="tracking-rules.js"></script>
 <script>
 (function() {
   // --- DOM ---
@@ -678,6 +688,8 @@
   const $outputWords = document.getElementById('outputWords');
   const $outputLines = document.getElementById('outputLines');
   const $removedCount= document.getElementById('removedCount');
+  const $diffLabel  = document.getElementById('diffLabel');
+  const $diffCountStat = document.getElementById('diffCountStat');
   const $chineseCount= document.getElementById('chineseCount');
   const $chineseCountStat = document.getElementById('chineseCountStat');
   const $emojiCount  = document.getElementById('emojiCount');
@@ -700,288 +712,7 @@
     weibo:       /\[(?:\/?cp|图片|表情|视频|链接|语音|音乐|投票)\]/g,
   };
 
-  // --- Tracking params to strip from URLs ---
-  // Common tracking/analytics query parameters across platforms
-  const TRACKING_PARAMS = [
-    // CoolAPK & Chinese platforms
-    's', 'spm', 'spmid', 'from', 'source', 'track', 'trackid',
-    'share_id', 'shareid', 'shared_from', 'share_from', 'share_medium',
-    'share_plat', 'share_session_id', 'share_source', 'share_tag',
-    'from_spmid', 'spmid_from', 'scene', 'channel', 'refer', 'ref',
-    // Universal analytics
-    'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
-    'utm_id', 'utm_source_platform', 'utm_creative', 'utm_creative_format',
-    // Facebook / Instagram
-    'fbclid', 'fb_action_ids', 'fb_action_types', 'fb_source', 'fb_ref',
-    'igshid', 'igsh',
-    // Google
-    'gclid', 'gclsrc', 'dclid', 'gbraid', 'wbraid',
-    // Twitter / X
-    'twclid', 't', 's09', 'ref_src', 'ref_url',
-    // Others
-    'mc_cid', 'mc_eid', 'mc_tc',
-    '_ga', '_gl', '_hsenc', '_hsmi', '_ke',
-    'ck_subscriber_id', 'oly_anon_id', 'oly_enc_id',
-    'otc', 'rss', 'sc_cid', 'si',
-    // Taobao / Tmall / JD / Chinese e-commerce
-    'ali_trackid', 'ali_refid', 'e', 'skuid', 'activityid',
-    'app', 'cpp', 'price', 'bxsign', 'wxsign',
-    'shareuniqueid', 'share_crt_v', 'shareurl', 'short_name',
-    'sourcetype', 'sp_tk', 'tk', 'tbsocialpopkey',
-    'un', 'un_site', 'ut_sk', 'suid',
-    'abbucket', 'ns', 'utparam', 'pricetid', 'mi_id', 'xxc',
-    // PDD
-    'refer_page_name', 'refer_page_id', 'refer_page_el_sn',
-    'page_from', 'feeds_pack_id', 'duoduo_type',
-    'pxq_secret_key', '_oak_share_snapshot_num', '_oak_share_time',
-    'share_oak_rcto', '_oak_share_ticket', 'share_uin',
-    'refer_share_id', 'refer_share_uin', 'refer_share_channel',
-    'refer_share_form', '_x_share_id', 'refer_page_sn', 'uin',
-    // Jingdong (JD)
-    'jxsid', 'jdsn', 'mpja', 'mpjb', 'mpjc',
-    'jd_pop', 'jd_track', 'ad_od', 'utm_term', 'utm_user',
-    // Bilibili
-    'buvid', 'buvid3', 'buvid4', 'buvid5',
-    'buvid6', 'buvid7', 'buvid8',
-    'unique_k', 'timestamp', 'up_id',
-    'plat_id', 'platform', 'plat', 'is_story_h5', 'story_h5',
-    'share_style', 'share_redirect_delay',
-    // WeChat
-    'wx_scene', 'wx_share_id',
-    // Zhihu
-    'zhid', 'utm_oi',
-    // Douyin / TikTok
-    'enter_from', 'enter_method', 'previous_page',
-    'sec_uid', 'did', 'iid', 'device_id',
-    // WeChat
-    'xtrack', 'req_id', 'subscene', 'sessionid', 'clicktime',
-    'enterid', 'finder_biz_enter_id', 'ranksessionid',
-    'jumppath', 'jumppathdepth', 'ascene',
-    'fasttmpl_type', 'fasttmpl_fullversion', 'fasttmpl_flag',
-    'realreporttime', 'devicetype', 'nettype', 'session_us',
-    'exportkey', 'pass_ticket', 'wx_header', 'flutter_pos',
-    // Douban
-    '_spm_id', '_i', 'dt_dapp', 'dt_platform',
-    // Tieba
-    'share', 'fr', 'see_lz', 'sfc', 'client_type', 'client_version',
-    'st', 'is_video', 'unique',
-    // Kuaishou
-    'cc', 'followrefer', 'sharemethod', 'docid', 'kpn', 'subbiz',
-    'photoid', 'sharetoken', 'shareresourcetype', 'userid',
-    'sharetype', 'et', 'sharemode', 'efid', 'originshareid',
-    'apptype', 'shareobjectid', 'shareurlopened', 'location',
-    // Hongguo / NovelQuickApp
-    'zlink', 'gd_label', 'share_type', 'use_open_launch_app_novel',
-    'user_id', 'share_timestamp', 'source_channel', 'entrance',
-    'report_params', 'ug_token', 'did',
-    // Xiaohongshu (RED)
-    'xhs_share_id', 'xhs_source', 'xhsshare', 'shareRedId', 'shareredid',
-    'xsec_source', 'app_platform', 'app_version', 'apptime',
-    'share_from_user_hidden', 'ignoreengage', 'author_share',
-    'share_channel', 'share_redirect_url',
-    // Generic share / nav params
-    'navhide', 'header', 'footer', 'hidebar',
-    'shareto', 'sharetype', 'shareid',
-    'redirect', 'redirect_url', 'redir',
-    'session_id', 'sid', 'token', 'access_token',
-    'country', 'region',
-  ];
-
-  // --- Whitelist: params that must NEVER be removed (security tokens, functional params) ---
-  const KEEP_PARAMS = new Set([
-    'xsec_token',    // Xiaohongshu security token — required for the link to work
-    'type',          // Content type discriminator
-    'id', 'qid', 'pid', 'cid', 'uid', 'gid', 'goods_id', 'encrypt_did', 'schemeParams', // Content/entity IDs
-    'p', 'page',     // Pagination
-    'q', 'query', 'search', 'keyword', // Search
-    'sort', 'order', 'dir', // Sort/filter
-    'tab', 'cat', 'category', // Category navigation
-    'v', 'version', // API version
-    'lang', 'locale', // Navigation prefs, not tracking
-    '__biz', 'mid', 'idx', 'sn', 'chksm', // WeChat article essential params
-  ]);
-
-  // --- Aggressive mode: for these domains, strip ALL params except KEEP_PARAMS ---
-  // Too many ever-changing tracking params to maintain individually
-  const AGGRESSIVE_DOMAINS = [
-    'item.taobao.com', 'detail.tmall.com', 'h5.m.taobao.com', 'm.tb.cn',
-    'item.jd.com', 'item.m.jd.com',
-    'h5.m.goofish.com', 'goofish.com',
-    'pinduoduo.com', 'mobile.yangkeduo.com',
-    'm.bilibili.com', 'www.bilibili.com', 'b23.tv',
-    'www.xiaohongshu.com', 'xhslink.com',
-    'www.coolapk.com',
-    'www.zhihu.com',
-    'www.douyin.com', 'v.douyin.com', 'iesdouyin.com',
-    'mp.weixin.qq.com', 'channels.weixin.qq.com',
-    'novelquickapp.com',
-    'kuaishou.com', 'www.kuaishou.com',
-    'tieba.baidu.com',
-    'douban.com', 'www.douban.com',
-    'lofter.com',
-    'toutiao.com', 'www.toutiao.com',
-    'music.163.com', 'y.music.163.com',
-    'store.steampowered.com',
-    'tiktok.com', 'www.tiktok.com',
-    'youtube.com', 'www.youtube.com', 'youtu.be',
-    'fanbox.cc',
-    'amazon.co.jp', 'amazon.com', 'amazon.cn', 'amazon.co.uk', 'amazon.de',
-  ];
-
-  // --- Simplify uri param for Douban: strip tracking from nested path ---
-  function simplifyDoubanUri(url) {
-    const uriMatch = url.match(/[?&]uri=([^&]+)/);
-    if (!uriMatch) return url;
-
-    let uriVal = uriMatch[1];
-    try { uriVal = decodeURIComponent(uriVal); } catch { /* keep as-is */ }
-
-    // Strip tracking params from the nested path
-    const qIdx = uriVal.indexOf('?');
-    if (qIdx < 0) return url; // No nested query string
-
-    const path = uriVal.slice(0, qIdx);
-    const qs = uriVal.slice(qIdx + 1);
-    const params = qs.split('&');
-    const cleanParams = params.filter(p => {
-      const key = (p.indexOf('=') >= 0 ? p.slice(0, p.indexOf('=')) : p).toLowerCase();
-      // Douban tracking params in nested uri
-      if (['_spm_id', '_i', 'dt_dapp', 'dt_platform'].includes(key)) return false;
-      return true;
-    });
-
-    let cleanUri = path;
-    if (cleanParams.length > 0) cleanUri += '?' + cleanParams.join('&');
-
-    // Replace uri in the full URL
-    const uriStart = url.indexOf('uri=') + 4;
-    const uriEnd = url.indexOf('&', uriStart);
-    const before = url.slice(0, uriStart);
-    const after = uriEnd >= 0 ? url.slice(uriEnd) : '';
-    return before + cleanUri + after;
-  }
-
-  // --- Simplify Amazon URLs: keep only /dp/{ASIN} ---
-  function simplifyAmazonUrl(url) {
-    // Extract ASIN from path, handle both /title/dp/ASIN and /dp/ASIN
-    // Compatible with https://, http://, www., and bare domains
-    return url.replace(
-      /^(?:(?:https?:\/\/)?[^\/]+)\/(?:.+\/)?dp\/([A-Z0-9]+).*$/i,
-      (m, asin) => {
-        const prefix = /^www\./i.test(url) ? 'https://' + url.match(/^www\.[^\/]+/i)[0] :
-                       /^https?:\/\//i.test(url) ? url.match(/^https?:\/\/[^\/]+/i)[0] :
-                       'https://' + url.match(/^[^\/]+/i)[0];
-        return prefix + '/dp/' + asin;
-      }
-    );
-  }
-
-  // --- Simplify Steam URLs: remove placeholder title slug ---
-  function simplifySteamUrl(url) {
-    // /app/513710/_/ → /app/513710/
-    return url.replace(/(store\.steampowered\.com\/app\/\d+\/)_\//gi, '$1');
-  }
-
-  // --- Simplify NetEase Music URLs: mobile → PC format ---
-  function simplifyMusicUrl(url) {
-    // y.music.163.com/m/song → music.163.com/#/song
-    // music.163.com/m/song → music.163.com/#/song
-    return url.replace(
-      /^https?:\/\/(?:y\.)?music\.163\.com\/m\//i,
-      'https://music.163.com/#/'
-    );
-  }
-
-  // --- Domain-specific overrides: some platforms need different rules ---
-  function getDomainParamBlacklist(domain) {
-    // Bilibili: mid = user/member ID (tracking), NOT a content ID
-    if (/bilibili\.com$|b23\.tv$/.test(domain)) return new Set(['mid']);
-    // Douyin: mid = music/sound ID (metadata), video ID is in the path
-    if (/douyin\.com$|iesdouyin\.com$/.test(domain)) return new Set(['mid']);
-    // WeChat: version/lang are app metadata, not needed for the article
-    if (/mp\.weixin\.qq\.com$/.test(domain)) return new Set(['version', 'lang']);
-    // Hongguo: uid is device metadata, not essential
-    if (/novelquickapp\.com$/.test(domain)) return new Set(['uid']);
-    return null;
-  }
-
-  // Domain-specific KEEP overrides: replaces global KEEP_PARAMS for this domain
-  function getDomainKeepParams(domain) {
-    // Hongguo: only encrypt_did + zlink + share_type + schemeParams are essential
-    if (/novelquickapp\.com$/.test(domain)) {
-      return new Set(['encrypt_did', 'zlink', 'share_type', 'schemeParams']);
-    }
-    // Douban: only uri is essential (contains nested path, may carry tracking)
-    if (/douban\.com$/.test(domain)) {
-      return new Set(['uri']);
-    }
-    return null; // Use global KEEP_PARAMS
-  }
-
-  // --- Simplify zlink for 红果短剧: keep only vid+video_id in schemeParams ---
-  function simplifyHongguoZlink(url) {
-    // Match zlink param: everything from zlink= to the next & or end
-    const zlinkMatch = url.match(/[?&]zlink=(.+?)(&|$)/);
-    if (!zlinkMatch) return url;
-
-    const zlinkVal = zlinkMatch[1];
-    // Decode the zlink value (may be URL-encoded)
-    let decodedZlink;
-    try { decodedZlink = decodeURIComponent(zlinkVal); } catch { return url; }
-
-    // Find schemeParams inside the nested URL
-    const spMatch = decodedZlink.match(/[?&]schemeParams=([^&]+)(&|$)/);
-    if (!spMatch) return url;
-
-    let spVal = spMatch[1];
-    // Decode schemeParams until it's plain JSON
-    try {
-      while (/%[0-9A-Fa-f]{2}/.test(spVal)) {
-        spVal = decodeURIComponent(spVal);
-      }
-    } catch { return url; }
-
-    // Parse JSON and keep only vid + video_id
-    try {
-      const json = JSON.parse(spVal);
-      const clean = {};
-      if (json.vid) clean.vid = json.vid;
-      if (json.video_id) clean.video_id = json.video_id;
-      const cleanJson = JSON.stringify(clean);
-
-      // Reconstruct zlink: base URL + decoded schemeParams JSON
-      const zlinkBase = decodedZlink.replace(/\?.*$/, '');
-      const cleanZlink = zlinkBase + '?schemeParams=' + cleanJson;
-
-      // Replace zlink in the full URL (zlink itself not encoded, only schemeParams)
-      const zlinkStart = url.indexOf('zlink=') + 6;
-      const zlinkEnd = url.indexOf('&', zlinkStart);
-      const before = url.substring(0, zlinkStart);
-      const after = zlinkEnd >= 0 ? url.substring(zlinkEnd) : '';
-      return before + cleanZlink + after;
-    } catch {
-      return url;
-    }
-  }
-
-  function extractDomain(url) {
-    // Handle normal, URL-encoded, and protocol-less URLs
-    let decoded = url;
-    if (/^https?%3A/i.test(url)) {
-      try { decoded = decodeURIComponent(url); } catch { /* keep original */ }
-    }
-    // Match https?://domain or www.domain or sub.domain.tld
-    const host = decoded.match(/(?:https?:\/\/)?([^\/\s?#]+)/i);
-    return host ? host[1].toLowerCase() : '';
-  }
-
-  function isAggressiveDomain(url) {
-    try {
-      const domain = extractDomain(url);
-      if (!domain) return false;
-      return AGGRESSIVE_DOMAINS.some(d => domain === d || domain.endsWith('.' + d));
-    } catch { return false; }
-  }
+  // Tracking rules loaded from tracking-rules.js → exposes TrackingRules.strip(text)
 
   // --- Bilibili BV ↔ AV conversion ---
   const BV_TABLE = 'fZodR9XQDSUm21yCkr6zBqiveYah8bt4xsWpHnJE7jL5VG3guMTKNPAwcF';
@@ -1075,7 +806,7 @@
 
   async function expandShortUrls(text) {
     const matches = text.match(URL_REGEX);
-    if (!matches) return text;
+    if (!matches) return { text, blockedUrls: [] };
 
     // Convert expanded URL to PC format where applicable
     function normalizeUrl(url) {
@@ -1092,6 +823,7 @@
 
     // Expand with limited concurrency (2 at a time) to avoid overwhelming server
     const expansions = [];
+    const blockedUrls = [];  // Track URLs blocked by anti-bot
     for (let i = 0; i < uniqueUrls.length; i += 2) {
       const batch = uniqueUrls.slice(i, i + 2);
       const results = await Promise.all(batch.map(async (u) => {
@@ -1102,6 +834,10 @@
             const data = await resp.json();
             if (data.expanded && data.expanded !== u) {
               return { from: u, to: normalizeUrl(data.expanded) };
+            }
+            // Server returned same URL — check if it was blocked
+            if (data.note && data.note.toLowerCase().includes('block')) {
+              blockedUrls.push(u);
             }
           }
         } catch (e) {
@@ -1116,7 +852,15 @@
     for (const e of expansions) {
       if (e) result = result.replace(e.from, e.to);
     }
-    return result;
+
+    // Append blocked warning only when nothing was expanded at all
+    if (blockedUrls.length > 0 && expansions.length === 0) {
+      result = result.trim();
+      if (result) result += '\n\n';
+      result += '⚠ 以下短链因反爬验证未能展开（请手动在浏览器中打开）：\n' + blockedUrls.join('\n');
+    }
+
+    return { text: result, blockedUrls };
   }
 
   // --- Process ---
@@ -1160,9 +904,13 @@
       } else if (key === 'expand') {
         // Expand short links (b23.tv etc.)
         const before = result;
-        result = await expandShortUrls(result);
+        const expandResult = await expandShortUrls(result);
+        result = expandResult.text;
         if (before !== result) {
           removedParts.push('[短链已展开]');
+        }
+        if (expandResult.blockedUrls.length > 0) {
+          removedParts.push(`[反爬拦截: ${expandResult.blockedUrls.length} 条短链未能展开]`);
         }
       } else if (key === 'bvav') {
         // Bilibili BV ↔ AV conversion
@@ -1174,7 +922,7 @@
       } else if (key === 'tracking') {
         // Strip tracking params from URLs
         const before = result;
-        result = stripTrackingParams(result);
+        result = TrackingRules.strip(result);
         if (before !== result) {
           const strippedCount = before.length - result.length;
           removedParts.push(`[追踪参数: 去除 ${strippedCount} 个字符]`);
@@ -1217,8 +965,10 @@
 
     // Diff info
     if (raw !== result) {
-      const removed = raw.length - result.length;
-      $diffInfo.textContent = `减少了 ${removed} 个字符`;
+      const delta = result.length - raw.length;
+      const verb = delta > 0 ? '增加了' : '减少了';
+      $diffInfo.textContent = `${verb} ${Math.abs(delta)} 个字符`;
+      $diffInfo.style.color = delta > 0 ? 'var(--orange)' : 'var(--green)';
     } else {
       $diffInfo.textContent = '';
     }
@@ -1249,94 +999,6 @@
     }
   }
 
-  // --- Strip tracking params from all URLs in text ---
-  function stripTrackingParams(text) {
-    // Match URLs with query strings: protocol://domain/path?key=val&key2=val2#hash
-    // Match both normal URLs and URL-encoded scheme (https%3A%2F%2F)
-    const urlRegex = /(?:https?:\/\/|https?%3A%2F%2F|www\.|[a-z0-9][-a-z0-9]*\.[a-z]{2,}\/)[^\s<>^`\[\]]+/gi;
-
-    return text.replace(urlRegex, (url) => {
-      // Normalize: add https:// if URL starts without protocol
-      let normalized = url;
-      if (!/^https?:\/\//i.test(url) && !/^https?%3A/i.test(url)) {
-        normalized = 'https://' + url;
-      }
-
-      // Split into base + query + hash
-      const hashIdx = url.indexOf('#');
-      const hash = hashIdx >= 0 ? url.slice(hashIdx) : '';
-      const baseUrl = hashIdx >= 0 ? url.slice(0, hashIdx) : url;
-
-      const qIdx = baseUrl.indexOf('?');
-      if (qIdx < 0) return url; // No query string
-
-      const base = baseUrl.slice(0, qIdx);
-      const qs = baseUrl.slice(qIdx + 1);
-      const params = qs.split('&');
-
-      // Parse query params, filter out tracking ones
-      const aggressive = isAggressiveDomain(normalized);
-
-      // Domain-specific blacklist for this URL
-      const urlDomain = extractDomain(normalized);
-      const domainBlacklist = getDomainParamBlacklist(urlDomain);
-
-      const cleanParams = params.filter(param => {
-        // Extract key (before first =)
-        const eqIdx = param.indexOf('=');
-        const key = (eqIdx >= 0 ? param.slice(0, eqIdx) : param).toLowerCase();
-        const val = eqIdx >= 0 ? param.slice(eqIdx + 1) : '';
-
-        // 0a. Domain-specific blacklist overrides everything
-        if (domainBlacklist && domainBlacklist.has(key)) return false;
-
-        // 0b. Domain-specific KEEP (replaces global KEEP_PARAMS for this domain)
-        const domainKeep = getDomainKeepParams(urlDomain);
-        if (domainKeep) {
-          if (domainKeep.has(key)) return true;
-        } else if (KEEP_PARAMS.has(key)) {
-          return true;
-        }
-
-        // AGGRESSIVE MODE: for notorious tracking domains, strip EVERYTHING else
-        if (aggressive) return false;
-
-        // 1. Remove if key is in tracking list
-        if (TRACKING_PARAMS.includes(key)) return false;
-
-        // 2. Remove if value looks like a tracking hash/token:
-        //    - >30 chars of hex/base64 (with padding =, +, /)
-        //    - >20 chars that looks like a hex string
-        //    - UUID/GUID pattern
-        if (eqIdx >= 0) {
-          if (val.length > 30 && /^[a-zA-Z0-9_+/=-]+$/.test(val)) return false;
-          if (val.length > 20 && /^[a-fA-F0-9]{20,}$/.test(val)) return false;
-          if (/^[a-fA-F0-9]{8}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{12}$/.test(val)) return false;
-        }
-
-        return true;
-      });
-
-      // Reconstruct URL
-      let clean = base;
-      if (cleanParams.length > 0) {
-        clean += '?' + cleanParams.join('&');
-      }
-      clean += hash;
-
-      // Post-processing: platform-specific URL normalization
-      if (aggressive) {
-        clean = simplifyHongguoZlink(clean);
-        clean = simplifyDoubanUri(clean);
-        clean = simplifyMusicUrl(clean);
-        clean = simplifySteamUrl(clean);
-        clean = simplifyAmazonUrl(clean);
-      }
-
-      return clean;
-    });
-  }
-
   function updateStats(raw, result) {
     $inputChars.textContent = raw.length;
     $inputWords.textContent = raw.trim() ? raw.trim().split(/\s+/).length : 0;
@@ -1346,7 +1008,23 @@
     $outputWords.textContent = result.trim() ? result.trim().split(/\s+/).length : 0;
     $outputLines.textContent = result ? result.split('\n').length : 0;
 
-    $removedCount.textContent = raw.length - result.length;
+    const diff = result.length - raw.length;
+    if (diff > 0) {
+      $removedCount.textContent = '+' + diff;
+      $diffLabel.textContent = '已增加';
+      $diffCountStat.style.color = 'var(--orange)';
+      $removedCount.style.color = 'var(--orange)';
+    } else if (diff < 0) {
+      $removedCount.textContent = Math.abs(diff);
+      $diffLabel.textContent = '已去除';
+      $diffCountStat.style.color = 'var(--green)';
+      $removedCount.style.color = 'var(--green)';
+    } else {
+      $removedCount.textContent = '0';
+      $diffLabel.textContent = '已去除';
+      $diffCountStat.style.color = 'var(--green)';
+      $removedCount.style.color = 'var(--green)';
+    }
 
     // Chinese char count
     const chineseMatches = raw.match(PATTERNS.chinese);
