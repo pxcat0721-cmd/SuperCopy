@@ -1,6 +1,14 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application") // AGP 9 内置 Kotlin，无需 kotlin.android 插件
     id("org.jetbrains.kotlin.plugin.compose")
+}
+
+// 正式签名信息存于 android/keystore.properties（已 gitignore，勿提交）
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 android {
@@ -15,12 +23,28 @@ android {
         versionName = "1.1"
     }
 
+    signingConfigs {
+        create("release") {
+            if (keystoreProps.isNotEmpty()) {
+                storeFile = rootProject.file(keystoreProps["storeFile"] as String)
+                storePassword = keystoreProps["storePassword"] as String
+                keyAlias = keystoreProps["keyAlias"] as String
+                keyPassword = keystoreProps["keyPassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("debug") // 暂用 debug 签名便于直接安装
+            // 有 keystore.properties 用正式签名，否则回退 debug 签名（CI/他人克隆仍可构建）
+            signingConfig = if (keystoreProps.isNotEmpty()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
