@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SuperCopy</string>
+
+    <string name="common_clear">清空</string>
+    <string name="common_back">返回</string>
+
+    <string name="main_input_title">输入文本</string>
+    <string name="main_result_title">处理结果</string>
+    <string name="main_processing">处理中…</string>
+    <string name="main_input_label">粘贴或输入要处理的文本</string>
+    <string name="main_output_label">处理后的文本</string>
+    <string name="main_read_clipboard">读取剪贴板</string>
+    <string name="main_copy_result">复制结果</string>
+    <string name="main_use_as_input">设为输入</string>
+    <string name="main_link_section">链接处理</string>
+    <string name="main_text_section">文本过滤</string>
+    <string name="main_about">关于</string>
+    <string name="main_copied">已复制到剪贴板</string>
+
+    <string name="filter_extract_url">口令提取</string>
+    <string name="filter_expand">展开短链</string>
+    <string name="filter_tracking">去除追踪标记</string>
+    <string name="filter_bvav">BV⇄AV 互转</string>
+    <string name="filter_urldecode">URL 解码</string>
+    <string name="filter_chinese">去除中文</string>
+    <string name="filter_emoji">去除 Emoji</string>
+    <string name="filter_numbers">去除数字</string>
+    <string name="filter_punctuation">去除标点</string>
+    <string name="filter_whitespace">压缩空格</string>
+    <string name="filter_special">去除特殊符号</string>
+    <string name="filter_weibo">去除微博格式</string>
+
+    <string name="about_title">关于</string>
+    <string name="about_info">信息</string>
+    <string name="about_app_version">应用版本</string>
+    <string name="about_build_version">构建版本</string>
+    <string name="about_subtitle">剪贴板链接清理工具</string>
+    <string name="about_developer">开发者</string>
+    <string name="about_github">GitHub</string>
+    <string name="about_project">项目主页</string>
+    <string name="about_thanks">致谢</string>
+    <string name="about_miuix_summary">YuKongA 的 MiuiX 风格 Compose 组件库</string>
+</resources>

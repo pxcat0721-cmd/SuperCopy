@@ -1,0 +1,48 @@
+## UI 规范
+
+- 所有 UI 组件使用 miuix；其组件内部已用 squircle 渲染圆角，直接用即可
+- **自定义形状元素用 squircle modifier**：非 miuix 组件的手搓形状不用 `RoundedCornerShape` 的 clip/background，改用 `top.yukonga.miuix.kmp.squircle.*`（随 miuix-ui 传递；低版本/无 runtime shader 自动回退圆角）。按性能选：
+  - **非点击纯色背景**（内容不溢出）→ `squircleBackground(color, radius)`：无 offscreen layer，**不要 clip**
+  - **图片 / 必须裁剪的内容** → `squircleClip(radius)`：一个 offscreen layer
+  - **可点击元素**（涟漪裁进圆角）→ `squircleSurface(color, radius)` + `.clickable{}`；条件可点击时按 `isSelectable` 退化为 `squircleBackground`
+  - **3dp 小徽章保持 `clip(RoundedCornerShape(3.dp))`**：该尺寸肉眼无差异，不值多一个 GPU layer
+- 返回按钮使用 MiuixIcons.Back
+- 底栏图标：Sidebar / Tune / UploadCloud / Settings
+- Badge：`clip(RoundedCornerShape(3.dp))` + 9.sp Bold Monospace
+- 操作 IconButton：`minHeight/minWidth = 35.dp, backgroundColor = secondaryContainer`
+- **页面骨架**：Scaffold + TopAppBar(scrollBehavior) + LazyColumn
+  - LazyColumn 必须加 `.scrollEndHaptic().overScrollVertical().nestedScroll(scrollBehavior.nestedScrollConnection)`
+  - `contentPadding` 仅设 top（`innerPadding.calculateTopPadding()`），不设 bottom
+  - 首个 item 是 Card / 表单时加 `item { Spacer(Modifier.height(12.dp)) }`；SmallTitle / RestartRequiredHint 开头**不加**（SmallTitle 自带上边距）
+  - 末尾统一 `item { Spacer(Modifier.height(24.dp).navigationBarsPadding()) }`
+  - **二级页面签名禁止 `bottomPadding: Dp` 参数**——靠上述末尾 Spacer 自适应
+  - **4 个 Pager Tab 例外**（Home/Proxy/Subscription/Settings）：外层 `MainPage` Scaffold 持有 `bottomBar`，必须接 `bottomPadding: Dp` 透传 outer `innerPadding.calculateBottomPadding()` 给 `contentPadding`
+- **顶栏 / 底栏毛玻璃**：所有页面 Scaffold 用 `BlurredBar` 包裹 `TopAppBar` / `NavigationBar`；MainPage 与每个二级页各自一份 backdrop（嵌套 layerBackdrop OK，抓取相互独立）。模式：
+  - 顶层 `val backdrop = rememberBlurBackdrop()`、`blurActive = backdrop != null`、bar 色 `if (blurActive) Color.Transparent else colorScheme.surface`
+  - `topBar/bottomBar = { BlurredBar(backdrop, blurActive) { TopAppBar/NavigationBar(color = barColor) } }`
+  - 内容区 LazyColumn 追加 `.then(if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier)` 供 textureBlur 抓取
+  - 搜索页（AppProxy/Connection）：BlurredBar 内套 `searchStatus.TopAppBarAnim(backgroundColor = 同 bar 色) { ... }`，搜索切换不挡毛玻璃
+- **宽屏适配**：窗口宽 ≥ 600dp（`WideScreenMinWidth`，`rememberIsWideScreen()`，[WindowSize.kt](app/src/main/kotlin/top/yukonga/mishka/ui/util/WindowSize.kt)；用缩放前 `LocalPlatformDensity` 量宽，界面缩放不翻转外壳）时：
+  - **导航**：[MainPage](app/src/main/kotlin/top/yukonga/mishka/ui/navigation/AppNavigation.kt) 把底部 `NavigationBar` 换成可展开收起的侧边 `NavigationRail`（`rememberNavigationRailState()`，默认收起）；手机/宽屏共用同一 `pagerContent` lambda。Home Tab 图标用 `MiuixIcons.Home`（不用 `Sidebar`，避免与 rail 展开钮撞脸）。inset：rail 吸收起始侧（`defaultWindowInsetsPadding=true`），内容区 `consumeWindowInsets(Start)` + `windowInsetsPadding(systemBars∪displayCutout .only(End))`，底部经 `bottomPadding` 透传各 Tab
+  - **顶栏**：所有 `TopAppBar` 页面走 [AdaptiveTopAppBar](app/src/main/kotlin/top/yukonga/mishka/ui/component/AdaptiveTopAppBar.kt)——宽屏固定不折叠 `SmallTopAppBar`（纵向空间紧张）、手机大标题 `TopAppBar`。**AboutScreen 例外**（hero 视差固定 `SmallTopAppBar`，不套，否则手机端多出重复大标题）。搜索页保留 `searchStatus.TopAppBarAnim { AdaptiveTopAppBar(...) }`；其搜索框动态 top padding 宽屏**恒为 0**（`if (isWideScreen) 0.dp else 12.dp * (1f - collapsedFraction)`）
+  - **内容居中**：4 个主 Tab 用 `WideContentBox { sidePadding -> LazyColumn(...) }`；**LazyColumn 保持全宽**（两侧无滚动死区），仅把 `sidePadding` 加进 `contentPadding` 的 start/end 把内容居中到 `MaxContentWidth=800dp`（与 600dp 外壳阈值是两个独立常量）。**是否居中复用 `rememberIsWideScreen()`**（外壳唯一权威）——独立比较阈值会在 densityScale≠1 时出现外壳与居中不一致。二级页宽屏仍全宽；手机路径行为不变。**不要**改回压缩 LazyColumn 节点宽度的 layout modifier（滚动死区）
+  - **横屏屏幕缺口**：miuix `Scaffold` 不自动 padding 内容，二级页 `contentPadding` 只吃 top → 横屏侧边刘海/手势条会压到内容。**每个二级页根 LazyColumn** 在 `.fillMaxSize()` 后加 `Modifier.horizontalCutoutPadding()`（只补水平 `displayCutout ∪ navigationBars`，竖屏为 0）；顶栏由 `TopAppBar` 自身 inset 处理，不重叠。**AboutScreen 相反**：内容侧已自行处理缺口，只给其 `SmallTopAppBar(defaultWindowInsetsPadding=false)` 加该 modifier。4 个主 Tab 内容居中在缺口内侧，无需此项
+- **Card 间距**：水平 12.dp，每项统一 `padding(horizontal = 12.dp).padding(bottom = 12.dp)`；不使用 `Arrangement.spacedBy`
+- **多组件卡片拆为独立 lazy item（滚动性能）**：`LazyColumn` 里禁止 `item { Card { 多行 } }`——整卡一次性组合，行多时（settings 大卡、代理组数百节点）滚动/展开卡顿。改用 [GroupedCardItems](app/src/main/kotlin/top/yukonga/mishka/ui/component/GroupedCardItems.kt)：`groupedCardItems(keyPrefix, items = listOf(CardItem("k") { row() }, ...))` 每行独立 item，`CardSegment` 分角拼回视觉连续的 miuix 卡片，只组合可见段。settings 各屏、DnsQueryScreen 结果、ProxyScreen 节点网格已按此重构。要点：
+  - **分角背景**：有圆角的首/末段 `squircleSurface`（fill+clip，**必须 clip**——否则段内 clickable 的方角涟漪溢出圆角）；中间段纯 `background`（无 offscreen layer 最省）。语义对齐 miuix `Card`（surfaceContainer + onSurfaceContainer + 16.dp 圆角；preference 自带内边距故段 `insidePadding=0`）
+  - `outerBottomPadding` 按所替换 Card 的 bottom padding 传（6/12/0）；条件行用 `buildList { if (…) add(CardItem…) }`
+  - `groupedCardItems` **不加 item 动画**（拆分是不可见的纯性能优化）；需要动画自行在 item 内 `Modifier.animateItem(...)`，**placement spec 不能设 null**——否则下方各组硬跳、无展开感
+  - **ProxyScreen 特例**：展开状态从 item 内 `rememberSaveable` 上提到屏幕级 `SnapshotStateList`（节点行是顶层 lazy item，随展开动态增删，存 item 内会随销毁丢失）；组头段 + 每行 ≤2 节点段拼卡；**分行恒 `chunked(2)`，「单列显示」（`R.string.proxy_single_column` / `PROXY_NODE_SINGLE_COLUMN`）的切换由行内自定义 `Layout` 按 `animateFloatAsState(tween(300))` 进度插值完成**（节点宽 半宽↔整宽、第二个节点位置 首项右侧↔首项下方、行高 单行↔两行；`NodeRowVerticalGap = 12.dp` 对齐段间 bottom padding 让两态视觉一致，竖排 y 基准取首项实际高度而非行 max 高度，避免两节点高度不等时留空隙）。**不要改回按开关切 `chunked(1/2)`**——行数一变 lazy key `nodes:{组}:{行号}` 语义整体错位，前半段行是同 key 内容瞬变（无动画）、后半段是新 key fadeIn，`Modifier.animateItem()` 对不上 key 帮不上忙，观感即「硬切」；morph 收进单个行 item 内部才能让两个节点同处一个 layout scope、位置与宽度都连续插值，同时保持 lazy 拆分粒度不变。进度 `State<Float>` 传进 measure 阶段读取（动画帧只重测量本行，不重组节点卡片），**禁止在 composition 里 `by` 解包**。节点名两种排布都不省略号截断，走 `basicMarquee(iterations = Int.MAX_VALUE)` 滚动 + `weight(1f, fill = false)` 让短名保持自然宽（marquee 仅在内容超容器时才动，短名零开销），排序/分行在内容 lambda 完成；组头与节点行都用 `Modifier.animateItem()` 替代 `AnimatedVisibility(expandVertically)`（一次性组合整组才是卡顿源）；组头底角随展开 `16.dp↔0.dp` 走 `animateDpAsState(tween(300))` 经 `CardSegment.bottomCornerRadius` 覆写——否则随 `isLast` 翻转瞬间圆↔方突变，且 target 必须判 `isExpanded`（目标态）而非 `rows.isEmpty()`，否则圆角要等整段收起动画跑完才开始
+  - **ProxyScreen 收起是连续高度收缩，不是 disappearing item 淡出**：点收起时**先跑动画、结束才从 `expandedGroups` 摘除**，期间 `retainedGroups`（非 saveable）保住行 item 继续产出，行高按 `(rowCount * 进度 - rowIndex).coerceIn(0f,1f)` 收缩（末行先卷完、逐行往上），内容仍按完整高度测量顶部对齐、由段上 `clipToBounds()` 裁掉——**卷起而非压扁变形**。段内底距 12dp 由行内 Layout 承担而非 `CardSegment.insidePadding`，否则收完残留一条 12dp 底色。**为什么不能直接移除 item**：移除后行变 LazyColumn 的 disappearing item，脱离布局在原位淡出，而下方内容目标位置已贴到组头、靠 placement spring 从远处追赶，两者交叠穿插 → 用户实测反馈「收起时卡片不连贯」；展开无此症状只因新 item 立即占位且淡入 alpha 低。**动画期间必须关掉 placement 动画**（`animateItem(placementSpec = null)`）：高度收缩本身已连续，再叠一层 spring 追赶会让行与行拖影不同步；开关用布尔标记（`animatingGroups.isNotEmpty() || singleColumnAnimating`）而非直接读进度 State——读进度会让整屏每帧重组。单列 morph 期间同理要关（`LaunchedEffect(singleColumn) + delay(300.milliseconds)` 置标记）。per 组进度存屏幕级 `mutableMapOf<String, MutableFloatState>`，进程恢复时 map 为空 → measure 取 `?: 1f` 直接全高无动画；打断重入靠 `expandJobs[name]?.cancel()` + 被 cancel 的旧 job **不**清理状态（清理交给接手的新动画）
+  - **不适用**：纯静态文本卡（ExternalControl 提示卡、RootSettings 警告卡）与视差 + `textureBlur` 的 AboutScreen 保持单 `item { Card }`；AboutScreen 内容 Column 用 `heightIn(min = 视口高)` 而非 `fillParentMaxHeight()`——后者钉死恰好一屏，横屏矮视口下超出内容被裁且无法滚动
+- **TextField 表单**：不包 Card，直接 `padding(horizontal = 12.dp).padding(bottom = 12.dp)`
+- **Edit Dialog 按钮顺序**：`not_modified | cancel | confirm`（三按钮 weight(1f) + `spacedBy(8.dp)`），confirm 用 `ButtonDefaults.textButtonColorsPrimary()`
+- **长内容 Dialog 滚动 + 按钮固定底部**：miuix `WindowDialog` 手机上不限 content 高度，过长会把底部按钮顶出屏。包 `Column(Modifier.heightIn(max = 500.dp))` 限高，滚动区 `Modifier.weight(1f, fill = false).verticalScroll(...)`（短内容自然收缩），按钮作为非加权子项固定底部。范例：[MetaSettingsScreen](app/src/main/kotlin/top/yukonga/mishka/ui/screen/settings/MetaSettingsScreen.kt) 的 Age 密钥对 Dialog
+- **选项列表 Dialog**（入口行点击弹出、内含若干操作行）：`WindowDialog` + `insideMargin = DpSize(0.dp, 24.dp)`——水平 0 让 `ArrowPreference` 操作行全出血（涟漪铺满对话框整宽），行自带 `insideMargin = PaddingValues(horizontal = 24.dp, vertical = 12.dp)` 内缩；垂直 24 补内置 title 的顶距与底部留白（miuix 的 title/summary/content 全包在 insideMargin 内，内置 title 自身仅 `bottom 12dp`，垂直置 0 会贴顶）。操作行可带 `startAction` 图标（`Modifier.padding(end = 16.dp)`）；底部按钮补 `horizontal = 24.dp` 与行内容对齐。内容超长时与上一条「长内容 Dialog」模式**组合**使用（WebDAV Dialog 即两者叠加）。范例：[BackupRestoreScreen](app/src/main/kotlin/top/yukonga/mishka/ui/screen/settings/BackupRestoreScreen.kt) 的本地备份 / WebDAV Dialog
+- **弹 Dialog 的入口行设 holdDownState**：`ArrowPreference(holdDownState = showXxxDialog, onClick = { showXxxDialog = true })`——对应 dialog 打开期间入口行保持按下态（MIUI 交互惯例）。仅适用于「入口行可见期间弹层存在」的场景；操作行先关闭自身再弹下一层（如恢复确认）时无按下态窗口，不设
+- **用户反馈**：`platform.showToast(message, long = false)`——轻量操作结果提示
+- **i18n**：所有用户字符串走 `stringResource(R.string.xxx)`（Composable）/ `context.getString(R.string.xxx)`（非 Composable），禁止硬编码；新增同时加 `res/values` + `res/values-zh-rCN`。key 命名 `{页面}_{描述}`，通用按钮 `common_` 前缀。日志消息英文，代码注释中文
+- **语义色 token**：状态/延迟/按钮/错误色统一走 `ui.theme.StatusColors`（`runState`/`delay`/`actionButton`/`danger`/`healthy`/`warning`/`neutral`/`selectedNodeContainer`）。**禁止屏幕里散落 `Color(0xFF...)`**；合法颜色源仅 `MiuixTheme.colorScheme.*` 与 `StatusColors`
+- **Flow 收集**：所有屏幕用 `collectAsStateWithLifecycle()`（`lifecycle-runtime-compose`），不用 compose runtime 的 `collectAsState`——后台时上游不再驱动重组
+- **强跳过友好的状态形状**：UiState `data class` 必须 `@Immutable`；大集合字段（节点/连接/组列表）一律 `ImmutableList`/`ImmutableMap`（`.toPersistentList()`/`.toPersistentMap()`），避免 SSM 重组做全表结构性 `equals`
+- **可复用组件 API**：`ui/component/*` 可复用 composable 第一可选参必须是 `modifier: Modifier = Modifier` 并应用到 root-most 节点；wrapper 透传到底层 miuix 组件
