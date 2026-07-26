@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SuperCopy</string>
+
+    <string name="common_clear">清空</string>
+    <string name="common_back">返回</string>
+
+    <string name="main_input_title">輸入文字</string>
+    <string name="main_result_title">處理結果</string>
+    <string name="main_processing">處理中…</string>
+    <string name="main_input_label">貼上或輸入要處理的文字</string>
+    <string name="main_output_label">處理後的文字</string>
+    <string name="main_read_clipboard">讀取剪貼簿</string>
+    <string name="main_copy_result">複製結果</string>
+    <string name="main_use_as_input">設為輸入</string>
+    <string name="main_link_section">連結處理</string>
+    <string name="main_text_section">文字過濾</string>
+    <string name="main_about">關於</string>
+    <string name="main_copied">已複製到剪貼簿</string>
+
+    <string name="filter_extract_url">口令提取</string>
+    <string name="filter_expand">展開短連結</string>
+    <string name="filter_tracking">移除追蹤參數</string>
+    <string name="filter_bvav">BV⇄AV 互轉</string>
+    <string name="filter_urldecode">URL 解碼</string>
+    <string name="filter_chinese">移除中文</string>
+    <string name="filter_emoji">移除 Emoji</string>
+    <string name="filter_numbers">移除數字</string>
+    <string name="filter_punctuation">移除標點</string>
+    <string name="filter_whitespace">壓縮空格</string>
+    <string name="filter_special">移除特殊符號</string>
+    <string name="filter_weibo">移除微博格式</string>
+
+    <string name="about_title">關於</string>
+    <string name="about_info">資訊</string>
+    <string name="about_app_version">應用版本</string>
+    <string name="about_build_version">建置版本</string>
+    <string name="about_developer">開發者</string>
+    <string name="about_github">GitHub</string>
+    <string name="about_project">專案主頁</string>
+    <string name="about_licenses">開放原始碼授權</string>
+</resources>

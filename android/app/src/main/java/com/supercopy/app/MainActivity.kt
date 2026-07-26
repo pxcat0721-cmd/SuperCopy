@@ -79,14 +79,18 @@ class MainActivity : ComponentActivity() {
         handleShareIntent(intent)
     }
 
-    /** 系统分享接收：其他 App 分享的文本直接进入处理管线 */
+    /** 系统分享 / 文本选择菜单接收：外部文本直接进入处理管线 */
     private fun handleShareIntent(intent: Intent?) {
-        if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
-            val shared = intent.getStringExtra(Intent.EXTRA_TEXT)
-            if (!shared.isNullOrBlank()) {
-                clipboardConsumed = true // 分享进来的内容优先，不再读剪贴板
-                vm.setInput(shared)
-            }
+        val text = when (intent?.action) {
+            Intent.ACTION_SEND ->
+                if (intent.type == "text/plain") intent.getStringExtra(Intent.EXTRA_TEXT) else null
+            Intent.ACTION_PROCESS_TEXT ->
+                intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
+            else -> null
+        }
+        if (!text.isNullOrBlank()) {
+            clipboardConsumed = true // 外部传入的内容优先，不再读剪贴板
+            vm.setInput(text)
         }
     }
 

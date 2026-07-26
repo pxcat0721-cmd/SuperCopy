@@ -163,27 +163,41 @@ object TrackingRules {
         return AGGRESSIVE_DOMAINS.any { domain == it || domain.endsWith(".$it") }
     }
 
+    // 域名判定正则与派生集合全部预编译/预构建（strip 热路径，禁止每次调用现编）
+    private val RE_BILI = Regex("bilibili\\.com$|b23\\.tv$")
+    private val RE_DOUYIN = Regex("douyin\\.com$|iesdouyin\\.com$")
+    private val RE_WEIXIN_MP = Regex("mp\\.weixin\\.qq\\.com$")
+    private val RE_NOVELQUICK = Regex("novelquickapp\\.com$")
+    private val RE_DOUBAN = Regex("douban\\.com$")
+    private val RE_QQMUSIC = Regex("(?:^|\\.)y\\.qq\\.com$")
+    private val RE_YOUTUBE = Regex("youtube\\.com$|youtu\\.be$")
+
+    private val MID_ONLY = setOf("mid")
+    private val WEIXIN_BLACKLIST = setOf("version", "lang")
+    private val UID_ONLY = setOf("uid")
+    private val NOVELQUICK_KEEP = setOf("encrypt_did", "zlink", "share_type", "schemeParams")
+    private val DOUBAN_KEEP = setOf("uri")
+    // QQ音乐：只保留歌曲/专辑/歌单 ID，其余（含 type、appshare 等）全清
+    private val QQMUSIC_KEEP = setOf("songmid", "songid", "albummid", "albumid", "id", "mid")
+    private val YOUTUBE_KEEP = KEEP_PARAMS + setOf("t", "list", "index") // 追加：时间戳、播放列表
+    private val BILI_KEEP = KEEP_PARAMS + setOf("t") // 追加：跳转时间点
+
     // --- 域名专属黑名单：即使在全平台白名单中也移除 ---
     private fun getDomainParamBlacklist(domain: String): Set<String>? = when {
-        Regex("bilibili\\.com$|b23\\.tv$").containsMatchIn(domain) -> setOf("mid")
-        Regex("douyin\\.com$|iesdouyin\\.com$").containsMatchIn(domain) -> setOf("mid")
-        Regex("mp\\.weixin\\.qq\\.com$").containsMatchIn(domain) -> setOf("version", "lang")
-        Regex("novelquickapp\\.com$").containsMatchIn(domain) -> setOf("uid")
+        RE_BILI.containsMatchIn(domain) -> MID_ONLY
+        RE_DOUYIN.containsMatchIn(domain) -> MID_ONLY
+        RE_WEIXIN_MP.containsMatchIn(domain) -> WEIXIN_BLACKLIST
+        RE_NOVELQUICK.containsMatchIn(domain) -> UID_ONLY
         else -> null
     }
 
     // --- 域名专属保留参数：替换全局白名单 ---
     private fun getDomainKeepParams(domain: String): Set<String>? = when {
-        Regex("novelquickapp\\.com$").containsMatchIn(domain) ->
-            setOf("encrypt_did", "zlink", "share_type", "schemeParams")
-        Regex("douban\\.com$").containsMatchIn(domain) -> setOf("uri")
-        Regex("(?:^|\\.)y\\.qq\\.com$").containsMatchIn(domain) ->
-            // QQ音乐：只保留歌曲/专辑/歌单 ID，其余（含 type、appshare 等）全清
-            setOf("songmid", "songid", "albummid", "albumid", "id", "mid")
-        Regex("youtube\\.com$|youtu\\.be$").containsMatchIn(domain) ->
-            KEEP_PARAMS + setOf("t", "list", "index") // 追加：时间戳、播放列表
-        Regex("bilibili\\.com$|b23\\.tv$").containsMatchIn(domain) ->
-            KEEP_PARAMS + setOf("t") // 追加：跳转时间点
+        RE_NOVELQUICK.containsMatchIn(domain) -> NOVELQUICK_KEEP
+        RE_DOUBAN.containsMatchIn(domain) -> DOUBAN_KEEP
+        RE_QQMUSIC.containsMatchIn(domain) -> QQMUSIC_KEEP
+        RE_YOUTUBE.containsMatchIn(domain) -> YOUTUBE_KEEP
+        RE_BILI.containsMatchIn(domain) -> BILI_KEEP
         else -> null
     }
 
@@ -276,12 +290,12 @@ object TrackingRules {
     private val UUID_TOKEN = Regex("^[a-fA-F0-9]{8}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{12}$")
 
     // --- 核心：清除文本中所有 URL 的追踪参数 ---
+    private val HTTP_PREFIX = Regex("^https?://", RegexOption.IGNORE_CASE)
+
     fun strip(text: String): String = URL_REGEX.replace(text) { match ->
         val url = match.value
         var normalized = url
-        if (!Regex("^https?://", RegexOption.IGNORE_CASE).containsMatchIn(url) &&
-            !ENCODED_PREFIX.containsMatchIn(url)
-        ) {
+        if (!HTTP_PREFIX.containsMatchIn(url) && !ENCODED_PREFIX.containsMatchIn(url)) {
             normalized = "https://$url"
         }
 

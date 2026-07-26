@@ -6,12 +6,17 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.supercopy.app.core.Filter
 import com.supercopy.app.core.Processor
+import kotlinx.collections.immutable.PersistentSet
+import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toPersistentSet
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -29,15 +34,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _processing = MutableStateFlow(false)
     val processing: StateFlow<Boolean> = _processing.asStateFlow()
 
+    // PersistentSet：稳定类型，避免每次输入变化连带全部开关行重组（CLAUDE.md 第 47 条）
     private val _activeFilters = MutableStateFlow(loadFilters())
-    val activeFilters: StateFlow<Set<Filter>> = _activeFilters.asStateFlow()
+    val activeFilters: StateFlow<PersistentSet<Filter>> = _activeFilters.asStateFlow()
 
     private var processJob: Job? = null
 
-    private fun loadFilters(): Set<Filter> {
+    private fun loadFilters(): PersistentSet<Filter> {
         val saved = prefs.getStringSet("filters", null)
-            ?: return setOf(Filter.EXTRACT_URL, Filter.EXPAND, Filter.TRACKING) // 默认开启链接三件套
-        return saved.mapNotNull { name -> Filter.entries.find { it.name == name } }.toSet()
+            ?: return persistentSetOf(Filter.EXTRACT_URL, Filter.EXPAND, Filter.TRACKING) // 默认开启链接三件套
+        return saved.mapNotNull { name -> Filter.entries.find { it.name == name } }.toPersistentSet()
     }
 
     fun setInput(text: String) {
@@ -46,8 +52,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun toggleFilter(filter: Filter) {
-        val next = _activeFilters.value.toMutableSet()
-        if (!next.remove(filter)) next.add(filter)
+        val cur = _activeFilters.value
+        val next = if (filter in cur) cur.remove(filter) else cur.add(filter)
         _activeFilters.value = next
         prefs.edit().putStringSet("filters", next.map { it.name }.toSet()).apply()
         scheduleProcess()
@@ -78,7 +84,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             }
             _processing.value = true
             try {
-                val result = Processor.process(raw, _activeFilters.value)
+                // 正则密集的处理放后台线程，主线程只收结果（卡顿主因）
+                val result = withContext(Dispatchers.Default) {
+                    Processor.process(raw, _activeFilters.value)
+                }
                 _output.value = result.output
                 _removedInfo.value = result.removedParts.joinToString("  ")
             } finally {

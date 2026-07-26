@@ -113,6 +113,9 @@ fun AboutScreen(
         }
     }
 
+    // 背景是否可见：滚到底后 BgEffect 动画暂停，不再 60fps 空转
+    val heroVisible by remember { derivedStateOf { scrollProgress < 1f } }
+
     val backdrop = rememberBlurBackdrop()
     val blurActive = backdrop != null && scrollProgress == 1f
     val barColor = if (blurActive) Color.Transparent else if (scrollProgress == 1f) colorScheme.surface else Color.Transparent
@@ -133,11 +136,9 @@ fun AboutScreen(
                     ),
                     navigationIcon = {
                         val layoutDirection = LocalLayoutDirection.current
-                        // CLAUDE.md：操作 IconButton = 35.dp + secondaryContainer 背景；
                         // 位置由 TopAppBar 的 navigationIconPadding(16.dp) 控制，不额外加 padding
                         IconButton(
                             onClick = onBack,
-                            backgroundColor = colorScheme.secondaryContainer,
                             minHeight = 35.dp,
                             minWidth = 35.dp,
                         ) {
@@ -163,7 +164,9 @@ fun AboutScreen(
                 innerPadding = innerPadding,
                 scrollBehavior = scrollBehavior,
                 lazyListState = lazyListState,
-                scrollProgress = scrollProgress,
+                // 以 lambda 传进 draw 阶段读取：hero 滚动不再逐帧重组整个内容区
+                scrollProgress = { scrollProgress },
+                heroVisible = heroVisible,
                 versionName = versionName,
                 versionCode = versionCode,
                 onOpenUrl = onOpenUrl,
@@ -177,7 +180,8 @@ private fun AboutContent(
     innerPadding: PaddingValues,
     scrollBehavior: ScrollBehavior,
     lazyListState: LazyListState,
-    scrollProgress: Float,
+    scrollProgress: () -> Float,
+    heroVisible: Boolean,
     versionName: String,
     versionCode: Long,
     onOpenUrl: (String) -> Unit,
@@ -212,10 +216,6 @@ private fun AboutContent(
 
     var logoHeightDp by remember { mutableStateOf(300.dp) }
 
-    val versionCodeProgress = ((scrollProgress - 0.05f) / 0.15f).coerceIn(0f, 1f)
-    val projectNameProgress = ((scrollProgress - 0.20f) / 0.15f).coerceIn(0f, 1f)
-    val iconProgress = ((scrollProgress - 0.35f) / 0.15f).coerceIn(0f, 1f)
-
     val scrollPadding = PaddingValues(
         top = innerPadding.calculateTopPadding(),
         start = innerPadding.calculateStartPadding(layoutDirection),
@@ -231,12 +231,12 @@ private fun AboutContent(
         val viewportHeight = maxHeight
 
         BgEffectBackground(
-            dynamicBackground = effectBackground,
+            dynamicBackground = effectBackground && heroVisible,
             modifier = Modifier.fillMaxSize(),
             bgModifier = Modifier.layerBackdrop(backdrop),
             isFullSize = true,
             effectBackground = effectBackground,
-            alpha = { 1f - scrollProgress },
+            alpha = { 1f - scrollProgress() },
         ) {
             Column(
                 modifier = Modifier
@@ -254,9 +254,10 @@ private fun AboutContent(
                     modifier = Modifier
                         .size(88.dp)
                         .graphicsLayer {
-                            alpha = 1 - iconProgress
-                            scaleX = 1 - (iconProgress * 0.05f)
-                            scaleY = 1 - (iconProgress * 0.05f)
+                            val p = ((scrollProgress() - 0.35f) / 0.15f).coerceIn(0f, 1f)
+                            alpha = 1 - p
+                            scaleX = 1 - (p * 0.05f)
+                            scaleY = 1 - (p * 0.05f)
                         }
                         // CLAUDE.md 第 4 条：图片裁剪用 squircleClip
                         .squircleClip(24.dp)
@@ -273,9 +274,10 @@ private fun AboutContent(
                     modifier = Modifier
                         .padding(top = 12.dp, bottom = 5.dp)
                         .graphicsLayer {
-                            alpha = 1 - projectNameProgress
-                            scaleX = 1 - (projectNameProgress * 0.05f)
-                            scaleY = 1 - (projectNameProgress * 0.05f)
+                            val p = ((scrollProgress() - 0.20f) / 0.15f).coerceIn(0f, 1f)
+                            alpha = 1 - p
+                            scaleX = 1 - (p * 0.05f)
+                            scaleY = 1 - (p * 0.05f)
                         }
                         .then(
                             if (blurEnabled) {
@@ -298,9 +300,10 @@ private fun AboutContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .graphicsLayer {
-                            alpha = 1 - versionCodeProgress
-                            scaleX = 1 - (versionCodeProgress * 0.05f)
-                            scaleY = 1 - (versionCodeProgress * 0.05f)
+                            val p = ((scrollProgress() - 0.05f) / 0.15f).coerceIn(0f, 1f)
+                            alpha = 1 - p
+                            scaleX = 1 - (p * 0.05f)
+                            scaleY = 1 - (p * 0.05f)
                         },
                     color = colorScheme.onSurfaceVariantSummary,
                     text = "v$versionName ($versionCode)",
@@ -353,12 +356,17 @@ private fun AboutContent(
                             )
                         }
 
-                        SmallTitle(text = stringResource(R.string.about_thanks))
+                        SmallTitle(text = stringResource(R.string.about_licenses))
                         BlurCard(blurEnabled, backdrop, cardBlendColors) {
                             ArrowPreference(
                                 title = "miuix",
-                                summary = stringResource(R.string.about_miuix_summary),
+                                summary = "github.com/compose-miuix-ui/miuix",
                                 onClick = { onOpenUrl("https://github.com/compose-miuix-ui/miuix") },
+                            )
+                            ArrowPreference(
+                                title = "Compose Multiplatform",
+                                summary = "github.com/JetBrains/compose-multiplatform",
+                                onClick = { onOpenUrl("https://github.com/JetBrains/compose-multiplatform") },
                             )
                         }
 

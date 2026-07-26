@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -105,11 +104,9 @@ fun MainScreen(
                     color = barColor,
                     scrollBehavior = scrollBehavior,
                     actions = {
-                    // CLAUDE.md：操作 IconButton = 35.dp + secondaryContainer 背景；
                     // 位置由 TopAppBar 的 actionIconPadding(16.dp) 控制，不额外加 padding
                     IconButton(
                         onClick = onAbout,
-                        backgroundColor = MiuixTheme.colorScheme.secondaryContainer,
                         minHeight = 35.dp,
                         minWidth = 35.dp,
                     ) {
@@ -136,14 +133,13 @@ fun MainScreen(
         ) {
             item { SmallTitle(text = stringResource(R.string.main_input_title)) }
             item {
+                // miuix 规范写法：宽高均由组件决定，只给 12dp 外边距（官方示例同款）
                 TextField(
                     value = input,
                     onValueChange = { vm.setInput(it) },
                     modifier = Modifier
-                        .fillMaxWidth()
                         .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp)
-                        .heightIn(min = 120.dp),
+                        .padding(bottom = 12.dp),
                     label = stringResource(R.string.main_input_label),
                 )
             }
@@ -177,11 +173,10 @@ fun MainScreen(
                 TextField(
                     value = output,
                     onValueChange = { },
+                    readOnly = true,
                     modifier = Modifier
-                        .fillMaxWidth()
                         .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp)
-                        .heightIn(min = 120.dp),
+                        .padding(bottom = 12.dp),
                     label = stringResource(R.string.main_output_label),
                 )
             }

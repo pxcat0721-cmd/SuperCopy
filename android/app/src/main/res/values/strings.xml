@@ -39,6 +39,5 @@
     <string name="about_developer">Developer</string>
     <string name="about_github">GitHub</string>
     <string name="about_project">Project home</string>
-    <string name="about_thanks">Credits</string>
-    <string name="about_miuix_summary">MiuiX-style Compose library by YuKongA</string>
+    <string name="about_licenses">Open source licenses</string>
 </resources>
