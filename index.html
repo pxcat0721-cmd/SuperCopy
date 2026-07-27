@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -6,767 +6,589 @@
 <title>SuperCopy - 智能文本复制工具</title>
 <style>
   :root {
-    --bg: #0f0f0f;
-    --surface: #1a1a1a;
-    --surface2: #222;
-    --border: #2a2a2a;
-    --text: #e0e0e0;
-    --text2: #999;
-    --accent: #6c5ce7;
-    --accent2: #a29bfe;
-    --danger: #e74c3c;
-    --danger2: #c0392b;
-    --green: #2ecc71;
-    --green2: #27ae60;
-    --orange: #f39c12;
-    --radius: 12px;
-    --transition: 0.2s ease;
-    --shadow-color: rgba(0,0,0,0.5);
-    --hover-overlay: rgba(255,255,255,0.04);
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e7e5de;
+    --border2: #f0efe9;
+    --text: #1a1915;
+    --text2: #8a887f;
+    --text3: #b3b1a7;
+    --accent: #1a1915;
+    --accent-fg: #ffffff;
+    --track-off: #dddbd2;
+    --del-fg: #a8493f;
+    --del-bg: #f6e7e4;
+    --ins-fg: #3f6b34;
+    --ins-bg: #e9f0e4;
+    --green: #4a8a3f;
+    --orange: #b0762f;
+    --shadow: 0 2px 8px -4px rgba(26,25,21,0.08);
   }
 
-  [data-theme="light"] {
-    --bg: #f5f5f5;
-    --surface: #ffffff;
-    --surface2: #f0f0f0;
-    --border: #e0e0e0;
-    --text: #1a1a1a;
-    --text2: #777;
-    --accent: #6c5ce7;
-    --accent2: #5b4cdb;
-    --shadow-color: rgba(0,0,0,0.1);
-    --hover-overlay: rgba(0,0,0,0.04);
+  [data-theme="dark"] {
+    --bg: #141412;
+    --surface: #1d1c1a;
+    --surface2: #262523;
+    --border: #2e2d2a;
+    --border2: #262523;
+    --text: #e8e6e0;
+    --text2: #8f8d84;
+    --text3: #5f5d55;
+    --accent: #e8e6e0;
+    --accent-fg: #1a1915;
+    --track-off: #3a3936;
+    --del-fg: #d08376;
+    --del-bg: rgba(200, 90, 70, 0.16);
+    --ins-fg: #8fbf7f;
+    --ins-bg: rgba(120, 180, 90, 0.14);
+    --green: #7fae72;
+    --orange: #c99a5e;
+    --shadow: 0 2px 8px -4px rgba(0,0,0,0.4);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  html, body { height: 100%; }
+
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
-    height: 100vh;
     overflow: hidden;
-    display: flex;
-    justify-content: center;
-    padding: 16px 20px;
-    transition: background 0.35s ease, color 0.35s ease;
+    transition: background 0.3s ease, color 0.3s ease;
   }
 
   body * {
-    transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
 
-  /* 背景装饰 */
-  body::before {
-    content: '';
-    position: fixed;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background:
-      radial-gradient(ellipse at 20% 50%, rgba(108, 92, 231, 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(162, 155, 254, 0.06) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 80%, rgba(46, 204, 113, 0.04) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: 0;
-  }
+  .mono { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
 
-  .container {
-    position: relative;
-    z-index: 1;
-    width: 100%;
+  .app {
     max-width: 1400px;
     height: 100%;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding-top: 50px;
+    padding: 0 24px;
   }
 
-  /* Header */
-  .top-bar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
+  /* ===== Header ===== */
+  .hd {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    /* 毛玻璃顶栏 */
-    background: color-mix(in srgb, var(--bg) 72%, transparent);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--border);
-    pointer-events: none;
+    align-items: baseline;
+    gap: 14px;
+    padding: 18px 0 14px;
+    flex-shrink: 0;
   }
 
-  .top-bar > * {
-    pointer-events: auto;
+  .logo { font-size: 17px; font-weight: 800; letter-spacing: -0.4px; }
+
+  .tagline { font-size: 11.5px; color: var(--text2); }
+
+  .spacer { flex: 1; }
+
+  .hlink {
+    font-size: 11px;
+    color: var(--text2);
+    background: none;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--text3);
+    padding: 2px;
+    white-space: nowrap;
   }
 
-  .logo-fixed {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    /* 渐变文字 */
-    background: linear-gradient(120deg, var(--accent2), var(--accent) 70%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-  }
+  #themeToggle { font-size: 12px; }
 
-  /* Two-column layout */
-  .columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
+  .hlink:hover { color: var(--text); }
+
+  a { color: var(--text); text-underline-offset: 3px; }
+  a:hover { color: var(--text2); }
+
+  /* ===== Layout ===== */
+  .main {
+    display: flex;
+    gap: 14px;
     flex: 1;
     min-height: 0;
+    padding-bottom: 20px;
   }
 
-  /* Card */
+  /* ===== Sidebar ===== */
+  aside {
+    width: 196px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 24px;
-    box-shadow: 0 1px 2px var(--shadow-color), 0 12px 32px -20px var(--shadow-color);
-    transition: border-color var(--transition), box-shadow var(--transition);
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
+    border-radius: 10px;
   }
 
-  .card:focus-within {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.10), 0 12px 32px -20px var(--shadow-color);
-  }
+  .group { overflow: hidden; flex-shrink: 0; }
 
-  .card-header {
+  .group-hd {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
-    flex-shrink: 0;
-  }
-
-  .card-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text2);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
-  /* Textarea */
-  textarea {
     width: 100%;
-    min-height: 0;
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    padding: 9px 12px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border2);
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 700;
     color: var(--text);
-    font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
-    font-size: 14px;
-    line-height: 1.7;
-    padding: 16px;
-    resize: vertical;
-    outline: none;
-    transition: border-color var(--transition), box-shadow var(--transition);
+    cursor: pointer;
+    text-align: left;
   }
 
-  textarea:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.15);
-  }
-
-  textarea::placeholder {
-    color: var(--text2);
-    opacity: 0.6;
-  }
-
-  /* Stats bar */
-  .stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
-    font-size: 12px;
-    color: var(--text2);
-  }
-
-  /* 统计项做成小胶囊 */
-  .stat {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 10px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-  }
-
-  .stat-value {
-    color: var(--accent2);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* === Sidebar + Main Layout === */
-  .main-layout {
-    display: flex;
-    gap: 20px;
-    align-items: stretch;
-    flex: 1;
-    min-height: 0;
-  }
-
-  /* === Sidebar Menu === */
-  .sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 180px;
-    max-width: 200px;
-    flex-shrink: 0;
-    min-height: 0;
-    overflow-y: auto;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px;
-  }
-
-  .sidebar-section {
+  .group-meta {
     display: flex;
     align-items: center;
     gap: 6px;
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 400;
     color: var(--text2);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    padding: 6px 8px 4px;
-    margin-top: 4px;
   }
 
-  /* 分组标题前的小竖条 */
-  .sidebar-section::before {
-    content: '';
-    width: 3px;
-    height: 10px;
-    border-radius: 2px;
-    background: var(--accent);
-    opacity: 0.7;
-    flex-shrink: 0;
+  .group-meta .chev {
+    display: inline-block;
+    transition: transform 0.2s ease;
+    font-size: 9px;
+    color: var(--text3);
   }
 
-  .sidebar-section:first-child {
-    margin-top: 0;
+  .group.collapsed .group-hd { border-bottom-color: transparent; }
+  .group.collapsed .chev { transform: rotate(-90deg); }
+
+  .group-body {
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
   }
 
-  .sidebar-item {
+  .group.collapsed .group-body { display: none; }
+
+  .frow {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
-    width: 100%;
-    padding: 7px 10px;
-    background: transparent;
+    padding: 5px 8px;
     border: none;
     border-radius: 6px;
-    color: var(--text2);
-    font-size: 12px;
+    background: none;
     font-family: inherit;
+    font-size: 12px;
+    color: var(--text2);
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
     text-align: left;
     white-space: nowrap;
   }
 
-  .sidebar-item:hover {
-    background: var(--surface2);
-    color: var(--text);
-  }
+  .frow:hover { background: var(--surface2); }
+  .frow.on { color: var(--text); }
 
-  .sidebar-item:active {
-    transform: scale(0.96);
-  }
-
-  .sidebar-item.active {
-    color: var(--accent2);
-    background: rgba(108, 92, 231, 0.12);
-    box-shadow: inset 0 0 0 1px rgba(108, 92, 231, 0.28);
-  }
-
-  .sidebar-item .item-icon {
-    font-size: 14px;
-    width: 18px;
-    text-align: center;
+  .switch {
+    width: 26px;
+    height: 15px;
+    border-radius: 8px;
+    background: var(--track-off);
+    position: relative;
     flex-shrink: 0;
-    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: background 0.2s ease;
   }
 
-  .sidebar-item.active .item-icon {
-    transform: scale(1.15);
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 11px;
+    height: 11px;
+    border-radius: 6px;
+    background: #fff;
+    transition: transform 0.2s ease;
   }
 
-  .sidebar-item .item-label {
-    flex: 1;
-  }
+  [data-theme="dark"] .switch::after { background: #cfcdc5; }
 
-  .sidebar-item .item-check {
-    font-size: 12px;
-    color: var(--accent2);
+  .frow.on .switch { background: var(--accent); }
+  .frow.on .switch::after { transform: translateX(11px); }
+  [data-theme="dark"] .frow.on .switch::after { background: var(--accent-fg); }
+
+  .side-foot {
+    font-size: 10.5px;
+    color: var(--text3);
+    padding: 2px 4px;
     flex-shrink: 0;
-    opacity: 0;
-    transform: scale(0.3) translateX(6px);
-    transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .sidebar-item.active .item-check {
-    opacity: 1;
-    transform: scale(1) translateX(0);
+  .side-foot .hlink { font-size: 10.5px; padding: 0; }
+
+  /* ===== History ===== */
+  .hist { padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; flex-shrink: 0; }
+
+  .hist-hd {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 11.5px;
+    font-weight: 700;
   }
 
-  .sidebar-divider {
-    height: 1px;
-    background: var(--border);
-    margin: 6px 8px;
+  .hist-item {
+    display: block;
+    width: 100%;
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    font-size: 10.5px;
+    color: var(--text2);
+    background: none;
+    border: none;
+    padding: 2px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    text-align: left;
   }
 
-  /* === Main content area === */
-  .main-content {
+  .hist-item:hover { color: var(--text); }
+  .hist-item .t { color: var(--text3); }
+  .hist-empty { font-size: 10.5px; color: var(--text3); }
+
+  /* ===== Columns ===== */
+  .cols {
     flex: 1;
     min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
     min-height: 0;
+  }
+
+  .col {
     display: flex;
     flex-direction: column;
+    padding: 14px 16px;
+    gap: 10px;
+    min-height: 0;
+    min-width: 0;
   }
-  .theme-toggle {
+
+  .col.focus-ring:focus-within { border-color: var(--text3); }
+  .col.out { box-shadow: var(--shadow); }
+
+  .col-hd {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .col-title { font-size: 12px; font-weight: 700; white-space: nowrap; }
+
+  .col-sub { font-weight: 400; font-size: 10.5px; color: var(--text2); white-space: nowrap; }
+
+  .col-stats {
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    font-size: 10.5px;
+    color: var(--text3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  textarea, .diff-view {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    background: none;
+    border: none;
+    outline: none;
+    resize: none;
+    color: var(--text);
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.9;
+    overflow-y: auto;
+  }
+
+  textarea::placeholder { color: var(--text3); }
+
+  .diff-view {
+    white-space: pre-wrap;
+    word-break: break-all;
+    cursor: text;
+  }
+
+  .diff-view del {
+    color: var(--del-fg);
+    background: var(--del-bg);
+    text-decoration: line-through;
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+
+  .diff-view ins {
+    color: var(--ins-fg);
+    background: var(--ins-bg);
+    text-decoration: none;
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+
+  .col-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    color: var(--text);
-    font-size: 14px;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all var(--transition);
-    user-select: none;
-  }
-
-  .theme-toggle:hover {
-    border-color: var(--text2);
-    background: var(--surface2);
-  }
-
-  .theme-toggle .toggle-icon {
-    font-size: 16px;
-    line-height: 1;
-  }
-
-  /* Actions */
-  .actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 16px;
+    gap: 8px;
+    flex-shrink: 0;
     flex-wrap: wrap;
   }
 
   .btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 7px;
     border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition);
     font-family: inherit;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), #5b4cdb);
-    color: #fff;
-  }
-
-  .btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(108, 92, 231, 0.35);
-  }
-
-  .btn-primary:active {
-    transform: translateY(0);
-  }
-
-  .btn-secondary {
-    background: var(--surface2);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  .btn-secondary:hover {
-    border-color: #aaa;
-    background: var(--surface2);
-  }
-
-  .btn-danger {
-    background: transparent;
-    color: var(--danger);
-    border: 1px solid transparent;
-  }
-
-  .btn-danger:hover {
-    background: rgba(231, 76, 60, 0.1);
-    border-color: rgba(231, 76, 60, 0.3);
-  }
-
-  .btn-copy {
-    background: linear-gradient(135deg, var(--green), var(--green2));
-    color: #fff;
-  }
-
-  .btn-copy:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(46, 204, 113, 0.35);
-  }
-
-  .btn-copy.copied {
-    background: linear-gradient(135deg, #27ae60, #1e8449);
-  }
-
-  .btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-
-  /* Diff highlight */
-  .removed-preview {
-    margin-top: 16px;
-    padding: 12px 16px;
-    background: rgba(231, 76, 60, 0.08);
-    border: 1px solid rgba(231, 76, 60, 0.2);
-    border-radius: 8px;
-    display: none;
-  }
-
-  .removed-preview.visible {
-    display: block;
-  }
-
-  .removed-preview .title {
     font-size: 12px;
-    color: var(--danger);
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    color: var(--text);
+    background: none;
+  }
+
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+  .btn.primary {
+    background: var(--accent);
+    color: var(--accent-fg);
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
+    font-size: 12.5px;
+    padding: 8px 22px;
   }
 
-  .removed-preview .content {
-    font-family: "SF Mono", "Fira Code", monospace;
-    font-size: 13px;
-    color: #999;
-    word-break: break-all;
-    max-height: 60px;
-    overflow-y: auto;
+  .btn.primary:hover { opacity: 0.88; }
+
+  .btn.outline { border: 1px solid var(--track-off); background: var(--surface); }
+  .btn.outline:hover { border-color: var(--text3); }
+
+  .btn.ghost { color: var(--text2); }
+  .btn.ghost:hover { color: var(--del-fg); background: var(--del-bg); }
+
+  .removed-line {
+    font-size: 10.5px;
+    color: var(--text3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
   }
 
-  /* Toast */
+  /* ===== Toast ===== */
   .toast {
     position: fixed;
-    top: 24px;
+    top: 20px;
     left: 50%;
-    transform: translateX(-50%) translateY(-120px);
-    background: var(--surface);
-    border: 1px solid var(--green);
-    color: var(--green);
-    padding: 12px 24px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--accent);
+    color: var(--accent-fg);
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
     z-index: 200;
-    box-shadow: 0 8px 30px -8px var(--shadow-color);
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 8px 24px -8px rgba(0,0,0,0.35);
+    transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
     pointer-events: none;
+    max-width: 90vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .toast.show {
-    transform: translateX(-50%) translateY(0);
-  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.warning { background: var(--orange); color: #fff; }
 
-  /* Responsive */
-  @media (max-width: 1100px) {
-    body { height: auto; overflow: auto; }
-    .container { height: auto; padding-top: 40px; }
-    .top-bar { padding: 8px 12px; gap: 8px; }
-    .logo-fixed { font-size: 16px; }
-    .main-layout { flex-direction: column; flex: none; }
-    /* 窄屏：侧边栏改为整齐的网格，每个功能项等宽对齐 */
-    .sidebar {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      min-width: auto;
-      max-width: none;
-      gap: 6px;
-      padding: 10px 12px;
-      overflow-y: visible;
-    }
-    .sidebar-section { grid-column: 1 / -1; padding: 4px 4px 0; margin-top: 2px; }
-    .sidebar-section:first-child { margin-top: 0; }
-    .sidebar-divider { display: none; }
-    .sidebar-item { width: auto; padding: 7px 10px; font-size: 12px; }
-    .columns { flex: none; }
-    .card { min-height: 0; overflow: visible; }
-    textarea { min-height: 200px; flex: none; }
-  }
-
-  @media (max-width: 768px) {
-    .columns { grid-template-columns: 1fr; }
-  }
-
-  @media (max-width: 600px) {
-    body { padding: 12px; }
-    /* 手机竖屏：固定两列，视觉上最稳定 */
-    .sidebar { grid-template-columns: 1fr 1fr; padding: 8px; gap: 5px; }
-    .sidebar-item { padding: 7px 8px; font-size: 12px; }
-    .sidebar-item .item-icon { font-size: 13px; width: 16px; }
-    .actions { flex-direction: column; }
-    .btn { justify-content: center; }
-    textarea { min-height: 150px; }
-    .top-bar { padding: 8px 12px; gap: 6px; }
-    .logo-fixed { font-size: 16px; }
-    .theme-toggle { font-size: 11px; padding: 4px 8px; }
-  }
-
-  /* 文本选中色 */
-  ::selection {
-    background: rgba(108, 92, 231, 0.35);
-  }
-
-  /* 键盘导航焦点环 */
-  .btn:focus-visible,
-  .sidebar-item:focus-visible,
-  .theme-toggle:focus-visible {
-    outline: 2px solid var(--accent);
+  /* ===== Focus / selection / scrollbar ===== */
+  .btn:focus-visible, .frow:focus-visible, .group-hd:focus-visible, .hlink:focus-visible, .hist-item:focus-visible {
+    outline: 2px solid var(--text2);
     outline-offset: 2px;
   }
 
-  .theme-toggle:hover {
-    border-color: var(--accent);
+  ::selection { background: rgba(140, 130, 100, 0.25); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--track-off); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 1000px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100%; }
+    .main { flex-direction: column; }
+    aside {
+      width: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      overflow: visible;
+    }
+    .hist { grid-column: 1 / -1; }
+    .side-foot { grid-column: 1 / -1; }
+    .cols { flex: none; }
+    textarea, .diff-view { min-height: 180px; flex: none; height: 180px; }
+    .diff-view { height: auto; max-height: 320px; min-height: 0; }
   }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #888; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #666; }
-
-  [data-theme="light"] ::-webkit-scrollbar-thumb { background: #ccc; }
-  [data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+  @media (max-width: 720px) {
+    .app { padding: 0 14px; }
+    .tagline { display: none; }
+    .cols { grid-template-columns: 1fr; }
+    aside { grid-template-columns: 1fr; }
+    .frow { padding: 11px 10px; font-size: 13px; }
+    .switch { width: 32px; height: 19px; border-radius: 10px; }
+    .switch::after { width: 15px; height: 15px; border-radius: 8px; }
+    .frow.on .switch::after { transform: translateX(13px); }
+    .group-hd { padding: 12px; font-size: 12.5px; }
+    .btn { padding: 11px 16px; font-size: 13px; }
+    .btn.primary { flex: 1; }
+    .btn.outline { flex: 1; }
+    .col-actions .col-stats { display: none; }
+  }
 </style>
 </head>
 <body>
 
-<div class="top-bar">
-  <span class="logo-fixed">SuperCopy</span>
-  <button class="theme-toggle" id="themeToggle" title="切换亮色/暗色主题">
-    <span class="toggle-icon">☀</span>
-    <span>亮色</span>
-  </button>
-</div>
+<div class="app">
+  <header class="hd">
+    <span class="logo">SuperCopy</span>
+    <span class="tagline">清理追踪参数 · 展开短链 · 提取口令</span>
+    <span class="spacer"></span>
+    <button class="hlink" id="themeToggle">暗色</button>
+  </header>
 
-<div class="container">
+  <div class="main">
+    <aside>
+      <section class="card group" data-group="text">
+        <button class="group-hd" aria-expanded="true">文本过滤
+          <span class="group-meta"><span class="gcount">0 项</span><span class="chev">▾</span></span>
+        </button>
+        <div class="group-body">
+          <button class="frow" data-filter="whitespace">压缩空格<span class="switch"></span></button>
+          <button class="frow" data-filter="emoji">去除 Emoji<span class="switch"></span></button>
+          <button class="frow" data-filter="chinese">去除中文<span class="switch"></span></button>
+          <button class="frow" data-filter="numbers">去除数字<span class="switch"></span></button>
+          <button class="frow" data-filter="punctuation">去除标点<span class="switch"></span></button>
+          <button class="frow" data-filter="special">去除特殊符号<span class="switch"></span></button>
+          <button class="frow" data-filter="weibo">去除微博格式<span class="switch"></span></button>
+        </div>
+      </section>
 
-  <div class="main-layout">
+      <section class="card group" data-group="link">
+        <button class="group-hd" aria-expanded="true">链接处理
+          <span class="group-meta"><span class="gcount">0 项</span><span class="chev">▾</span></span>
+        </button>
+        <div class="group-body">
+          <button class="frow" data-filter="tracking">去除追踪标记<span class="switch"></span></button>
+          <button class="frow" data-filter="expand">展开短链<span class="switch"></span></button>
+          <button class="frow" data-filter="extracturl">口令提取<span class="switch"></span></button>
+          <button class="frow" data-filter="bvav">BV⇄AV 互转<span class="switch"></span></button>
+          <button class="frow" data-filter="urldecode">URL 解码<span class="switch"></span></button>
+        </div>
+      </section>
 
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-section">文本过滤</div>
-    <button class="sidebar-item" data-filter="chinese">
-      <span class="item-icon">字</span>
-      <span class="item-label">去除中文</span>
-      <span class="item-check">✓</span>
-    </button>
-    <button class="sidebar-item" data-filter="emoji">
-      <span class="item-icon">:)</span>
-      <span class="item-label">去除 Emoji</span>
-      <span class="item-check">✓</span>
-    </button>
-    <button class="sidebar-item" data-filter="numbers">
-      <span class="item-icon">#</span>
-      <span class="item-label">去除数字</span>
-      <span class="item-check">✓</span>
-    </button>
-    <button class="sidebar-item" data-filter="punctuation">
-      <span class="item-icon">~</span>
-      <span class="item-label">去除标点</span>
-      <span class="item-check">✓</span>
-    </button>
-    <button class="sidebar-item" data-filter="whitespace">
-      <span class="item-icon">␣</span>
-      <span class="item-label">压缩空格</span>
-      <span class="item-check">✓</span>
-    </button>
-    <button class="sidebar-item" data-filter="special">
-      <span class="item-icon">※</span>
-      <span class="item-label">去除特殊符号</span>
-      <span class="item-check">✓</span>
-    </button>
-    <button class="sidebar-item" data-filter="weibo">
-      <span class="item-icon">@</span>
-      <span class="item-label">去除微博格式</span>
-      <span class="item-check">✓</span>
-    </button>
+      <section class="card hist" id="histCard">
+        <div class="hist-hd">最近处理 <button class="hlink" id="histClear">清空</button></div>
+        <div id="histList"><div class="hist-empty">复制结果后自动记录</div></div>
+      </section>
 
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section">链接处理</div>
-    <button class="sidebar-item" data-filter="tracking">
-      <span class="item-icon">&amp;</span>
-      <span class="item-label">去除追踪标记</span>
-      <span class="item-check">✓</span>
-    </button>
-    <button class="sidebar-item" data-filter="expand">
-      <span class="item-icon">&#187;</span>
-      <span class="item-label">展开短链</span>
-      <span class="item-check">✓</span>
-    </button>
-    <button class="sidebar-item" data-filter="extracturl">
-      <span class="item-icon">&#9632;</span>
-      <span class="item-label">口令提取</span>
-      <span class="item-check">✓</span>
-    </button>
-    <button class="sidebar-item" data-filter="bvav">
-      <span class="item-icon">&#8660;</span>
-      <span class="item-label">BV⇄AV 互转</span>
-      <span class="item-check">✓</span>
-    </button>
-    <button class="sidebar-item" data-filter="urldecode">
-      <span class="item-icon">%</span>
-      <span class="item-label">URL 解码</span>
-      <span class="item-check">✓</span>
-    </button>
-  </aside>
+      <div class="side-foot"><span id="activeCount">0 项已启用</span> · <button class="hlink" id="allOff">全部关闭</button></div>
+    </aside>
 
-  <!-- Main content -->
-  <div class="main-content">
+    <div class="cols">
+      <section class="card col focus-ring">
+        <div class="col-hd">
+          <span class="col-title">输入</span>
+          <span class="col-stats" id="inStats">0 字 · 0 行</span>
+        </div>
+        <textarea id="input" placeholder="在此粘贴你的文本...
 
-  <div class="columns">
+快捷键：
+  Ctrl+Shift+V  从剪贴板粘贴
+  Ctrl+Enter    复制结果"></textarea>
+        <div class="col-actions">
+          <button class="btn outline" id="pasteBtn">从剪贴板粘贴</button>
+          <button class="btn ghost" id="clearBtn">清空</button>
+        </div>
+      </section>
 
-  <!-- Input -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">输入文本</span>
-      <button class="btn btn-danger" id="clearBtn" style="padding: 6px 12px; font-size: 12px;">清空</button>
-    </div>
-    <textarea
-      id="input"
-      placeholder="在此粘贴你的文本...&#10;&#10;支持快捷键：&#10;  Ctrl+Shift+V  从剪贴板粘贴&#10;  Ctrl+Enter  复制结果"
-    ></textarea>
-    <div class="stats">
-      <div class="stat">字符 <span class="stat-value" id="inputChars">0</span></div>
-      <div class="stat">单词 <span class="stat-value" id="inputWords">0</span></div>
-      <div class="stat">行 <span class="stat-value" id="inputLines">0</span></div>
-      <div class="stat" id="chineseCountStat" style="display:none;">中文 <span class="stat-value" id="chineseCount">0</span></div>
-      <div class="stat" id="emojiCountStat" style="display:none;">Emoji <span class="stat-value" id="emojiCount">0</span></div>
+      <section class="card col out">
+        <div class="col-hd">
+          <span class="col-title">输出 <span class="col-sub" id="diffInfo"></span></span>
+          <button class="hlink" id="diffToggle">显示改动 ✓</button>
+        </div>
+        <textarea id="output" placeholder="处理后的文本将显示在这里..." readonly></textarea>
+        <div class="diff-view mono" id="diffView" hidden></div>
+        <div class="col-actions">
+          <button class="btn primary" id="copyBtn">复制结果</button>
+          <button class="btn outline" id="swapBtn">设为输入</button>
+          <span class="spacer"></span>
+          <span class="col-stats" id="outStats"></span>
+        </div>
+        <div class="removed-line" id="removedLine" hidden></div>
+      </section>
     </div>
   </div>
-
-  <!-- Output -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">处理后文本</span>
-      <span style="font-size: 12px; color: var(--text2);" id="diffInfo"></span>
-    </div>
-    <textarea
-      id="output"
-      placeholder="处理后的文本将显示在这里..."
-      readonly
-    ></textarea>
-    <div class="stats">
-      <div class="stat">字符 <span class="stat-value" id="outputChars">0</span></div>
-      <div class="stat">单词 <span class="stat-value" id="outputWords">0</span></div>
-      <div class="stat">行 <span class="stat-value" id="outputLines">0</span></div>
-      <div class="stat" id="diffCountStat"><span id="diffLabel">已去除</span> <span class="stat-value" id="removedCount">0</span> 个字符</div>
-    </div>
-
-    <!-- Removed content preview -->
-    <div class="removed-preview" id="removedPreview">
-      <div class="title">被去除的内容</div>
-      <div class="content" id="removedContent"></div>
-    </div>
-
-    <div class="actions">
-      <button class="btn btn-copy" id="copyBtn">
-        复制结果
-      </button>
-      <button class="btn btn-secondary" id="pasteBtn">
-        从剪贴板粘贴
-      </button>
-      <button class="btn btn-secondary" id="swapBtn">
-        设为输入
-      </button>
-    </div>
-  </div>
-
-  </div><!-- /columns -->
-
-  </div><!-- /main-content -->
-
-  </div><!-- /main-layout -->
-
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script src="tracking-rules.js"></script>
 <script>
 (function() {
   // --- DOM ---
-  const $input    = document.getElementById('input');
-  const $output   = document.getElementById('output');
-  const $sidebar  = document.getElementById('sidebar');
-  const $copyBtn  = document.getElementById('copyBtn');
-  const $clearBtn = document.getElementById('clearBtn');
-  const $pasteBtn = document.getElementById('pasteBtn');
-  const $swapBtn  = document.getElementById('swapBtn');
-  const $toast    = document.getElementById('toast');
-  const $removedPreview = document.getElementById('removedPreview');
-  const $removedContent = document.getElementById('removedContent');
-  const $diffInfo = document.getElementById('diffInfo');
+  const $ = id => document.getElementById(id);
+  const $input = $('input'), $output = $('output'), $diffView = $('diffView');
+  const $copyBtn = $('copyBtn'), $clearBtn = $('clearBtn'), $pasteBtn = $('pasteBtn'), $swapBtn = $('swapBtn');
+  const $toast = $('toast'), $diffInfo = $('diffInfo'), $diffToggle = $('diffToggle');
+  const $inStats = $('inStats'), $outStats = $('outStats'), $removedLine = $('removedLine');
+  const $histList = $('histList'), $histClear = $('histClear');
+  const $activeCount = $('activeCount');
 
-  const $inputChars  = document.getElementById('inputChars');
-  const $inputWords  = document.getElementById('inputWords');
-  const $inputLines  = document.getElementById('inputLines');
-  const $outputChars = document.getElementById('outputChars');
-  const $outputWords = document.getElementById('outputWords');
-  const $outputLines = document.getElementById('outputLines');
-  const $removedCount= document.getElementById('removedCount');
-  const $diffLabel  = document.getElementById('diffLabel');
-  const $diffCountStat = document.getElementById('diffCountStat');
-  const $chineseCount= document.getElementById('chineseCount');
-  const $chineseCountStat = document.getElementById('chineseCountStat');
-  const $emojiCount  = document.getElementById('emojiCount');
-  const $emojiCountStat = document.getElementById('emojiCountStat');
+  // --- Storage helpers ---
+  const store = {
+    get(k, fallback) { try { const v = localStorage.getItem(k); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+  };
 
   // --- State ---
-  const allSidebarItems = [...$sidebar.querySelectorAll('.sidebar-item')];
-  const activeFilters = new Set(
-    allSidebarItems.filter(b => b.classList.contains('active')).map(b => b.dataset.filter)
-  );
+  const activeFilters = new Set(store.get('supercopy-filters', []));
+  let diffMode = store.get('supercopy-diff', true);
+  let history = store.get('supercopy-history', []);
+  let lastRaw = '', lastResult = '';
 
   // --- Regex patterns ---
   const PATTERNS = {
@@ -774,19 +596,24 @@
     emoji:       /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{2934}\u{2935}\u{25AA}\u{25AB}\u{25B6}\u{25C0}\u{25FB}-\u{25FE}\u{200D}\u{FE0F}\u{20E3}\u{1F004}\u{1F0CF}\u{1F18E}]/gu,
     numbers:     /\d+/g,
     punctuation: /[\p{P}\p{S}]/gu,
-    whitespace:  /[^\S\n]{2,}/g,  // 行内空白（不吞换行，换行单独处理）
+    whitespace:  /[^\S\n]{2,}/g,
     special:     /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/g,
     weibo:       /\[(?:\/?cp|图片|表情|视频|链接|语音|音乐|投票)\]/g,
   };
 
-  // Tracking rules loaded from tracking-rules.js → exposes TrackingRules.strip(text)
+  const FILTER_LABELS = {
+    chinese: '中文', emoji: 'Emoji', numbers: '数字', punctuation: '标点',
+    whitespace: '多余空格', special: '特殊符号', tracking: '追踪参数',
+    expand: '展开短链', bvav: 'BV⇄AV', extracturl: '口令提取',
+    urldecode: 'URL解码', weibo: '微博格式',
+  };
 
   // --- Bilibili BV ↔ AV conversion ---
   const BV_TABLE = 'fZodR9XQDSUm21yCkr6zBqiveYah8bt4xsWpHnJE7jL5VG3guMTKNPAwcF';
-  const BV_S = [11, 10, 3, 8, 4, 6];       // positions of encoded chars in BV string
+  const BV_S = [11, 10, 3, 8, 4, 6];
   const BV_XOR = 177451812;
   const BV_ADD = 8728348608;
-  const BV_TEMPLATE = [...'BV1  4 1 7  ']; // template for AV→BV conversion
+  const BV_TEMPLATE = [...'BV1  4 1 7  '];
 
   function bvToAv(bv) {
     let sum = 0;
@@ -813,14 +640,12 @@
 
   function convertBvAv(text) {
     const convertedFromBv = new Set();
-    // BV → AV
     let result = text.replace(/BV1[a-zA-Z0-9]{9}/gi, m => {
       if (m.length !== 12) return m;
       const av = bvToAv(m);
       if (av) convertedFromBv.add(av.toLowerCase());
       return av || m;
     });
-    // AV → BV (skip AV codes we just created from BV conversion)
     result = result.replace(/\bav(\d+)\b/gi, m => {
       if (convertedFromBv.has(m.toLowerCase())) return m;
       const bv = avToBv(m);
@@ -829,75 +654,26 @@
     return result;
   }
 
-  const FILTER_LABELS = {
-    chinese:     '中文',
-    emoji:       'Emoji',
-    numbers:     '数字',
-    punctuation: '标点',
-    whitespace:  '多余空格',
-    special:     '特殊符号',
-    tracking:    '追踪参数',
-    expand:      '展开短链',
-    bvav:        'BV⇄AV',
-    extracturl:  '口令提取',
-    urldecode:   'URL解码',
-    weibo:       '微博格式',
-  };
-
-  // --- Sidebar: item clicks (toggle filter) ---
-  $sidebar.addEventListener('click', e => {
-    const item = e.target.closest('.sidebar-item');
-    if (!item) return;
-    const key = item.dataset.filter;
-    if (activeFilters.has(key)) {
-      activeFilters.delete(key);
-      item.classList.remove('active');
-    } else {
-      activeFilters.add(key);
-      item.classList.add('active');
-    }
-    process();
-  });
-
-  // --- Input typing ---
-  let debounceTimer;
-  $input.addEventListener('input', () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(process, 150);
-  });
-
-  // --- Expand short links by calling local server API ---
-  // Matches all URLs; the server follows redirects and returns the final URL.
-  // Non-short URLs just resolve to themselves (no-op).
-  // 排除全角标点：分享文案里 URL 后常紧跟 ，。） 等，不能算进链接里
+  // --- URL regexes（排除全角标点，分享文案里 URL 后常紧跟 ，。） 等）---
   const URL_REGEX = /(?:https?:\/\/|https?%3A%2F%2F)[^\s<>^`\[\]，。、；：！？（）【】《》「」『』“”‘’…]+/gi;
-  // 宽松版：额外匹配 www. 开头和裸域名（口令提取、URL 保护用）
   const ANY_URL_REGEX = /(?:https?:\/\/|https?%3A%2F%2F|www\.|[a-z0-9][-a-z0-9]*\.[a-z]{2,}\/)[^\s<>^`\[\]，。、；：！？（）【】《》「」『』“”‘’…]+/gi;
 
-  // 展开结果缓存：url → { to: 展开后URL|null, blocked: bool }
-  // 短链的展开结果基本不变，缓存后打字过程中不会反复请求服务器
+  // 展开结果缓存：url → { to, blocked }
   const expandCache = new Map();
 
   async function expandShortUrls(text) {
     const matches = text.match(URL_REGEX);
     if (!matches) return { text, blockedUrls: [] };
 
-    // Convert expanded URL to PC format where applicable
     function normalizeUrl(url) {
-      // xhslink.cn → xiaohongshu.com: /discovery/item/ → /explore/
       const m = url.match(/^(https?:\/\/www\.xiaohongshu\.com)\/discovery\/item\/([a-f0-9]+)(\?.*)?$/i);
-      if (m) {
-        return m[1] + '/explore/' + m[2] + (m[3] || '');
-      }
+      if (m) return m[1] + '/explore/' + m[2] + (m[3] || '');
       return url;
     }
 
-    // Deduplicate URLs to avoid redundant API calls
     const uniqueUrls = [...new Set(matches)];
-
-    // 先查缓存，只请求没见过的 URL
-    const expansions = [];    // {from, to} — 本次要应用的替换
-    const blockedUrls = [];   // Track URLs blocked by anti-bot
+    const expansions = [];
+    const blockedUrls = [];
     const toFetch = [];
     for (const u of uniqueUrls) {
       const cached = expandCache.get(u);
@@ -909,7 +685,6 @@
       }
     }
 
-    // Expand with limited concurrency (2 at a time) to avoid overwhelming server
     for (let i = 0; i < toFetch.length; i += 2) {
       const batch = toFetch.slice(i, i + 2);
       const results = await Promise.all(batch.map(async (u) => {
@@ -923,13 +698,11 @@
               expandCache.set(u, { to, blocked: false });
               return { from: u, to };
             }
-            // Server returned same URL — check if it was blocked
             const blocked = !!(data.note && data.note.toLowerCase().includes('block'));
             expandCache.set(u, { to: null, blocked });
             if (blocked) blockedUrls.push(u);
           }
         } catch (e) {
-          // 网络失败不入缓存，下次处理时重试
           console.warn('短链展开失败:', u, e.message);
         }
         return null;
@@ -938,13 +711,11 @@
     }
 
     let result = text;
-    // 长 URL 先替换，避免某条短链恰好是另一条的前缀时误伤
     expansions.sort((a, b) => b.from.length - a.from.length);
     for (const e of expansions) {
-      result = result.split(e.from).join(e.to); // 替换全部出现位置，且不解释 $ 等特殊符号
+      result = result.split(e.from).join(e.to);
     }
 
-    // 所有链接都没展开成功、且存在被拦截的，才在文本里追加提示
     if (blockedUrls.length > 0 && expansions.length === 0) {
       result = result.trim();
       if (result) result += '\n\n';
@@ -954,144 +725,15 @@
     return { text: result, blockedUrls };
   }
 
-  // --- Process ---
-  // 序号守卫：短链展开可能耗时较长，期间用户再次输入会触发新一轮 process，
-  // 旧请求完成后必须丢弃，否则会用旧结果覆盖新结果
-  let processSeq = 0;
-
-  async function process() {
-    const seq = ++processSeq;
-    const raw = $input.value;
-    let result = raw;
-    const removedParts = [];
-
-    // 阶段一：链接处理，顺序固定：口令提取 → 展开短链 → 去追踪 → BV/AV
-    const LINK_KEYS = ['extracturl', 'expand', 'tracking', 'bvav'];
-    const linkKeys = LINK_KEYS.filter(k => activeFilters.has(k));
-    const textKeys = [...activeFilters].filter(k => !LINK_KEYS.includes(k) && k !== 'urldecode');
-
-    for (const key of linkKeys) {
-      if (key === 'extracturl') {
-        // Extract URLs from share phrases (抖音口令 etc.)
-        const urls = result.match(ANY_URL_REGEX);
-        if (urls && urls.length > 0) {
-          result = [...new Set(urls)].join('\n');
-          removedParts.push(`[口令提取: ${urls.length} 个链接]`);
-        }
-      } else if (key === 'expand') {
-        // Expand short links (b23.tv etc.)
-        const before = result;
-        const expandResult = await expandShortUrls(result);
-        if (seq !== processSeq) return; // 已有更新的输入，放弃本次结果
-        result = expandResult.text;
-        if (before !== result) {
-          removedParts.push('[短链已展开]');
-        }
-        if (expandResult.blockedUrls.length > 0) {
-          removedParts.push(`[反爬拦截: ${expandResult.blockedUrls.length} 条短链未能展开]`);
-        }
-      } else if (key === 'tracking') {
-        // Strip tracking params from URLs
-        const before = result;
-        result = TrackingRules.strip(result);
-        if (before !== result) {
-          const strippedCount = before.length - result.length;
-          removedParts.push(`[追踪参数: 去除 ${strippedCount} 个字符]`);
-        }
-      } else if (key === 'bvav') {
-        // Bilibili BV ↔ AV conversion
-        const before = result;
-        result = convertBvAv(result);
-        if (before !== result) {
-          removedParts.push('[BV⇄AV 已转换]');
-        }
-      }
-    }
-
-    // 阶段二：文本过滤。先把 URL 换成占位符保护起来，
-    // 避免去数字/标点/特殊符号把链接绞碎。
-    // 占位符只含私有区字符 + 小写字母，不会被任何过滤规则命中。
-    const savedUrls = [];
-    if (textKeys.length > 0) {
-      result = result.replace(ANY_URL_REGEX, m => {
-        const token = '' + String(savedUrls.length).replace(/\d/g, d => 'abcdefghij'[+d]) + '';
-        savedUrls.push(m);
-        return token;
-      });
-    }
-
-    for (const key of textKeys) {
-      if (key === 'whitespace') {
-        // 行内连续空白压成一个空格；3+ 连续换行压成一个空行
-        const before = result;
-        result = result.replace(PATTERNS.whitespace, ' ');
-        result = result.replace(/\n{3,}/g, '\n\n');
-        result = result.replace(/^\s+|\s+$/g, ''); // trim as well
-        if (before !== result) {
-          removedParts.push('多余空格');
-        }
-      } else {
-        const pattern = PATTERNS[key];
-        if (!pattern) continue;
-
-        // Collect removed content for preview
-        const matches = result.match(pattern);
-        if (matches && matches.length > 0) {
-          const removedStr = matches.join('').slice(0, 50);
-          removedParts.push(`[${FILTER_LABELS[key]}: ${removedStr}${matches.join('').length > 50 ? '...' : ''}]`);
-        }
-
-        result = result.replace(pattern, '');
-      }
-    }
-
-    // 还原被保护的 URL
-    if (savedUrls.length > 0) {
-      result = result.replace(/([a-j]+)/g, (m, code) => {
-        const idx = Number([...code].map(c => 'abcdefghij'.indexOf(c)).join(''));
-        return savedUrls[idx] !== undefined ? savedUrls[idx] : m;
-      });
-    }
-
-    // URL decode runs LAST — after tracking params are already stripped,
-    // so it won't break the query string structure
-    if (activeFilters.has('urldecode')) {
-      const before = result;
-      result = urlDecodeText(result);
-      if (before !== result) {
-        removedParts.push('[URL解码]');
-      }
-    }
-
-    $output.value = result;
-
-    // Stats
-    updateStats(raw, result);
-    updateRemovedPreview(raw, result, removedParts);
-
-    // Diff info
-    if (raw !== result) {
-      const delta = result.length - raw.length;
-      const verb = delta > 0 ? '增加了' : '减少了';
-      $diffInfo.textContent = `${verb} ${Math.abs(delta)} 个字符`;
-      $diffInfo.style.color = delta > 0 ? 'var(--orange)' : 'var(--green)';
-    } else {
-      $diffInfo.textContent = '';
-    }
-  }
-
-  // --- URL decode: convert %xx sequences to normal characters ---
-  // Handles double-encoded URLs (e.g. %253A → %3A → : after repeated decoding)
+  // --- URL decode ---
   function urlDecodeText(text) {
     try {
       let prev = text;
-      // Decode up to 3 times to handle double/triple encoding
       for (let i = 0; i < 3; i++) {
         let decoded;
         try {
           decoded = decodeURIComponent(prev);
         } catch {
-          // If full decode fails, try replacing only valid %xx sequences
           decoded = prev.replace(/%[0-9A-Fa-f]{2}/g, m => {
             try { return decodeURIComponent(m); } catch { return m; }
           });
@@ -1105,93 +747,355 @@
     }
   }
 
-  // 按 grapheme（用户可见字符）计数；UTF-16 length 会把一个 emoji 算成 2 个
+  // --- Process pipeline（序号守卫：丢弃过期的异步结果）---
+  let processSeq = 0;
+
+  async function process() {
+    const seq = ++processSeq;
+    const raw = $input.value;
+    let result = raw;
+    const removedParts = [];
+
+    const LINK_KEYS = ['extracturl', 'expand', 'tracking', 'bvav'];
+    const linkKeys = LINK_KEYS.filter(k => activeFilters.has(k));
+    const textKeys = [...activeFilters].filter(k => !LINK_KEYS.includes(k) && k !== 'urldecode');
+
+    for (const key of linkKeys) {
+      if (key === 'extracturl') {
+        const urls = result.match(ANY_URL_REGEX);
+        if (urls && urls.length > 0) {
+          result = [...new Set(urls)].join('\n');
+          removedParts.push(`口令提取 ${urls.length} 链接`);
+        }
+      } else if (key === 'expand') {
+        const before = result;
+        const expandResult = await expandShortUrls(result);
+        if (seq !== processSeq) return;
+        result = expandResult.text;
+        if (before !== result) removedParts.push('短链已展开');
+        if (expandResult.blockedUrls.length > 0) removedParts.push(`反爬拦截 ${expandResult.blockedUrls.length} 条`);
+      } else if (key === 'tracking') {
+        const before = result;
+        result = TrackingRules.strip(result);
+        if (before !== result) removedParts.push(`追踪参数 −${before.length - result.length}`);
+      } else if (key === 'bvav') {
+        const before = result;
+        result = convertBvAv(result);
+        if (before !== result) removedParts.push('BV⇄AV 已转换');
+      }
+    }
+
+    // 文本过滤前先把 URL 换成占位符保护起来（占位符只含私有区字符 + 小写字母）
+    const savedUrls = [];
+    if (textKeys.length > 0) {
+      result = result.replace(ANY_URL_REGEX, m => {
+        const token = '\uE000' + String(savedUrls.length).replace(/\d/g, d => 'abcdefghij'[+d]) + '\uE001';
+        savedUrls.push(m);
+        return token;
+      });
+    }
+
+    for (const key of textKeys) {
+      if (key === 'whitespace') {
+        const before = result;
+        result = result.replace(PATTERNS.whitespace, ' ');
+        result = result.replace(/\n{3,}/g, '\n\n');
+        result = result.replace(/^\s+|\s+$/g, '');
+        if (before !== result) removedParts.push('多余空格');
+      } else {
+        const pattern = PATTERNS[key];
+        if (!pattern) continue;
+        const matches = result.match(pattern);
+        if (matches && matches.length > 0) {
+          removedParts.push(`${FILTER_LABELS[key]} ×${matches.length}`);
+        }
+        result = result.replace(pattern, '');
+      }
+    }
+
+    if (savedUrls.length > 0) {
+      result = result.replace(/\uE000([a-j]+)\uE001/g, (m, code) => {
+        const idx = Number([...code].map(c => 'abcdefghij'.indexOf(c)).join(''));
+        return savedUrls[idx] !== undefined ? savedUrls[idx] : m;
+      });
+    }
+
+    // URL 解码放最后，避免破坏 query 结构
+    if (activeFilters.has('urldecode')) {
+      const before = result;
+      result = urlDecodeText(result);
+      if (before !== result) removedParts.push('URL解码');
+    }
+
+    lastRaw = raw;
+    lastResult = result;
+    $output.value = result;
+    render(raw, result, removedParts);
+  }
+
+  // --- Grapheme counting ---
   const graphemeSegmenter = (typeof Intl !== 'undefined' && Intl.Segmenter) ? new Intl.Segmenter() : null;
   function countGraphemes(s) {
     if (graphemeSegmenter) return [...graphemeSegmenter.segment(s)].length;
-    return [...s].length; // 退化为按码点计数
+    return [...s].length;
   }
 
-  function updateStats(raw, result) {
-    $inputChars.textContent = raw.length;
-    $inputWords.textContent = raw.trim() ? raw.trim().split(/\s+/).length : 0;
-    $inputLines.textContent = raw ? raw.split('\n').length : 0;
-
-    $outputChars.textContent = result.length;
-    $outputWords.textContent = result.trim() ? result.trim().split(/\s+/).length : 0;
-    $outputLines.textContent = result ? result.split('\n').length : 0;
-
-    const diff = result.length - raw.length;
-    if (diff > 0) {
-      $removedCount.textContent = '+' + diff;
-      $diffLabel.textContent = '已增加';
-      $diffCountStat.style.color = 'var(--orange)';
-      $removedCount.style.color = 'var(--orange)';
-    } else if (diff < 0) {
-      $removedCount.textContent = Math.abs(diff);
-      $diffLabel.textContent = '已去除';
-      $diffCountStat.style.color = 'var(--green)';
-      $removedCount.style.color = 'var(--green)';
+  // --- Character diff（公共前后缀裁剪 + 有界 LCS，超限退化为整段替换）---
+  function diffParts(a, b) {
+    if (a === b) return [[0, a]];
+    const A = Array.from(a), B = Array.from(b);
+    let p = 0;
+    while (p < A.length && p < B.length && A[p] === B[p]) p++;
+    let s = 0;
+    while (s < A.length - p && s < B.length - p && A[A.length - 1 - s] === B[B.length - 1 - s]) s++;
+    const prefix = A.slice(0, p).join('');
+    const suffix = s ? A.slice(-s).join('') : '';
+    const aM = A.slice(p, A.length - s), bM = B.slice(p, B.length - s);
+    const parts = [];
+    if (prefix) parts.push([0, prefix]);
+    if (aM.length * bM.length > 250000) {
+      if (aM.length) parts.push([-1, aM.join('')]);
+      if (bM.length) parts.push([1, bM.join('')]);
+    } else if (aM.length === 0) {
+      if (bM.length) parts.push([1, bM.join('')]);
+    } else if (bM.length === 0) {
+      parts.push([-1, aM.join('')]);
     } else {
-      $removedCount.textContent = '0';
-      $diffLabel.textContent = '已去除';
-      $diffCountStat.style.color = 'var(--green)';
-      $removedCount.style.color = 'var(--green)';
+      // LCS DP
+      const n = aM.length, m = bM.length;
+      const dp = new Uint32Array((n + 1) * (m + 1));
+      for (let i = n - 1; i >= 0; i--) {
+        for (let j = m - 1; j >= 0; j--) {
+          dp[i * (m + 1) + j] = aM[i] === bM[j]
+            ? dp[(i + 1) * (m + 1) + j + 1] + 1
+            : Math.max(dp[(i + 1) * (m + 1) + j], dp[i * (m + 1) + j + 1]);
+        }
+      }
+      let i = 0, j = 0;
+      while (i < n && j < m) {
+        if (aM[i] === bM[j]) { parts.push([0, aM[i]]); i++; j++; }
+        else if (dp[(i + 1) * (m + 1) + j] >= dp[i * (m + 1) + j + 1]) { parts.push([-1, aM[i]]); i++; }
+        else { parts.push([1, bM[j]]); j++; }
+      }
+      while (i < n) { parts.push([-1, aM[i]]); i++; }
+      while (j < m) { parts.push([1, bM[j]]); j++; }
     }
-
-    // Chinese char count
-    const chineseMatches = raw.match(PATTERNS.chinese);
-    if (chineseMatches && chineseMatches.length > 0) {
-      $chineseCount.textContent = chineseMatches.join('').length;
-      $chineseCountStat.style.display = '';
-    } else {
-      $chineseCountStat.style.display = 'none';
+    if (suffix) parts.push([0, suffix]);
+    // 合并相邻同类段
+    const merged = [];
+    for (const [op, txt] of parts) {
+      if (merged.length && merged[merged.length - 1][0] === op) merged[merged.length - 1][1] += txt;
+      else merged.push([op, txt]);
     }
-
-    // Emoji count（按用户可见字符计，组合 emoji 如 👨‍👩‍👧 算 1 个）
-    const emojiMatches = raw.match(PATTERNS.emoji);
-    if (emojiMatches && emojiMatches.length > 0) {
-      $emojiCount.textContent = countGraphemes(emojiMatches.join(''));
-      $emojiCountStat.style.display = '';
-    } else {
-      $emojiCountStat.style.display = 'none';
-    }
+    return merged;
   }
 
-  function updateRemovedPreview(raw, result, removedParts) {
-    if (raw === result || removedParts.length === 0) {
-      $removedPreview.classList.remove('visible');
+  function renderDiff(raw, result) {
+    $diffView.textContent = '';
+    if (!raw && !result) {
+      const ph = document.createElement('span');
+      ph.style.color = 'var(--text3)';
+      ph.textContent = '处理后的文本将显示在这里...';
+      $diffView.appendChild(ph);
       return;
     }
-    $removedPreview.classList.add('visible');
-    $removedContent.textContent = removedParts.join('  ');
+    const parts = diffParts(raw, result);
+    const frag = document.createDocumentFragment();
+    for (const [op, txt] of parts) {
+      if (op === 0) frag.appendChild(document.createTextNode(txt));
+      else {
+        const el = document.createElement(op === -1 ? 'del' : 'ins');
+        el.textContent = txt;
+        frag.appendChild(el);
+      }
+    }
+    $diffView.appendChild(frag);
   }
+
+  // --- Render ---
+  function statsText(t) {
+    let s = `${t.length} 字 · ${t ? t.split('\n').length : 0} 行`;
+    return s;
+  }
+
+  function render(raw, result, removedParts) {
+    // input stats（中文/Emoji 有则追加）
+    let inS = statsText(raw);
+    const cn = raw.match(PATTERNS.chinese);
+    if (cn) inS += ` · 中文 ${cn.join('').length}`;
+    const em = raw.match(PATTERNS.emoji);
+    if (em) inS += ` · Emoji ${countGraphemes(em.join(''))}`;
+    $inStats.textContent = inS;
+    $outStats.textContent = result ? statsText(result) : '';
+
+    // diff info in title
+    const delta = result.length - raw.length;
+    if (raw !== result && delta !== 0) {
+      $diffInfo.textContent = delta < 0 ? `已去除 ${-delta} 字符` : `已增加 ${delta} 字符`;
+      $diffInfo.style.color = delta < 0 ? 'var(--green)' : 'var(--orange)';
+    } else if (raw !== result) {
+      $diffInfo.textContent = '已转换';
+      $diffInfo.style.color = 'var(--text2)';
+    } else {
+      $diffInfo.textContent = '';
+    }
+
+    // removed summary line
+    if (removedParts && removedParts.length > 0) {
+      $removedLine.hidden = false;
+      $removedLine.textContent = removedParts.join(' · ');
+    } else {
+      $removedLine.hidden = true;
+    }
+
+    applyDiffMode();
+  }
+
+  function applyDiffMode() {
+    const showDiff = diffMode;
+    $diffToggle.textContent = showDiff ? '显示改动 ✓' : '显示改动';
+    $diffView.hidden = !showDiff;
+    $output.style.display = showDiff ? 'none' : '';
+    if (showDiff) renderDiff(lastRaw, lastResult);
+  }
+
+  $diffToggle.addEventListener('click', () => {
+    diffMode = !diffMode;
+    store.set('supercopy-diff', diffMode);
+    applyDiffMode();
+  });
+
+  // --- Filters UI ---
+  const frows = [...document.querySelectorAll('.frow')];
+
+  function syncFilterUI() {
+    frows.forEach(b => b.classList.toggle('on', activeFilters.has(b.dataset.filter)));
+    document.querySelectorAll('.group').forEach(g => {
+      const keys = [...g.querySelectorAll('.frow')].map(b => b.dataset.filter);
+      const n = keys.filter(k => activeFilters.has(k)).length;
+      g.querySelector('.gcount').textContent = `${n} 项`;
+    });
+    $activeCount.textContent = `${activeFilters.size} 项已启用`;
+    store.set('supercopy-filters', [...activeFilters]);
+  }
+
+  frows.forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.filter;
+    activeFilters.has(k) ? activeFilters.delete(k) : activeFilters.add(k);
+    syncFilterUI();
+    process();
+  }));
+
+  $('allOff').addEventListener('click', () => {
+    activeFilters.clear();
+    syncFilterUI();
+    process();
+  });
+
+  // --- Group collapse ---
+  const collapsed = new Set(store.get('supercopy-groups', []));
+  document.querySelectorAll('.group').forEach(g => {
+    const name = g.dataset.group;
+    if (collapsed.has(name)) g.classList.add('collapsed');
+    const hd = g.querySelector('.group-hd');
+    hd.setAttribute('aria-expanded', String(!collapsed.has(name)));
+    hd.addEventListener('click', () => {
+      g.classList.toggle('collapsed');
+      const isCollapsed = g.classList.contains('collapsed');
+      hd.setAttribute('aria-expanded', String(!isCollapsed));
+      isCollapsed ? collapsed.add(name) : collapsed.delete(name);
+      store.set('supercopy-groups', [...collapsed]);
+    });
+  });
+
+  // --- History ---
+  function timeAgo(t) {
+    const d = Date.now() - t;
+    if (d < 60000) return '刚刚';
+    if (d < 3600000) return Math.floor(d / 60000) + '分钟前';
+    if (d < 86400000) return Math.floor(d / 3600000) + '小时前';
+    if (d < 172800000) return '昨天';
+    return new Date(t).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+  }
+
+  function histLabel(entry) {
+    const url = entry.o.match(URL_REGEX);
+    let base = url ? url[0].replace(/^https?:\/\/(www\.)?/, '') : entry.o.replace(/\s+/g, ' ').trim();
+    return base.slice(0, 36) || '（空）';
+  }
+
+  function renderHistory() {
+    $histList.textContent = '';
+    if (history.length === 0) {
+      const d = document.createElement('div');
+      d.className = 'hist-empty';
+      d.textContent = '复制结果后自动记录';
+      $histList.appendChild(d);
+      return;
+    }
+    history.slice(0, 8).forEach(entry => {
+      const b = document.createElement('button');
+      b.className = 'hist-item';
+      b.title = '点击恢复到输入框';
+      b.textContent = histLabel(entry) + ' ';
+      const t = document.createElement('span');
+      t.className = 't';
+      t.textContent = timeAgo(entry.t);
+      b.appendChild(t);
+      b.addEventListener('click', () => {
+        $input.value = entry.i;
+        process();
+        showToast('已恢复历史记录');
+      });
+      $histList.appendChild(b);
+    });
+  }
+
+  function pushHistory(input, output) {
+    if (!output.trim()) return;
+    if (history.length && history[0].o === output) return;
+    history.unshift({ i: input, o: output, t: Date.now() });
+    history = history.slice(0, 20);
+    store.set('supercopy-history', history);
+    renderHistory();
+  }
+
+  $histClear.addEventListener('click', () => {
+    history = [];
+    store.set('supercopy-history', history);
+    renderHistory();
+    showToast('已清空历史');
+  });
+
+  // --- Input ---
+  let debounceTimer;
+  $input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(process, 150);
+  });
 
   // --- Copy ---
   $copyBtn.addEventListener('click', async () => {
     const text = $output.value;
     if (!text) {
-      showToast('! 没有可复制的内容', 'warning');
+      showToast('没有可复制的内容', 'warning');
       return;
     }
+    const done = () => {
+      $copyBtn.textContent = '✓ 已复制';
+      showToast('已复制到剪贴板');
+      pushHistory($input.value, text);
+      setTimeout(() => { $copyBtn.textContent = '复制结果'; }, 1600);
+    };
     try {
       await navigator.clipboard.writeText(text);
-      $copyBtn.classList.add('copied');
-      $copyBtn.innerHTML = '<span>✓</span> 已复制!';
-      showToast('✓ 已复制到剪贴板');
-      setTimeout(() => {
-        $copyBtn.classList.remove('copied');
-        $copyBtn.innerHTML = '复制结果';
-      }, 2000);
+      done();
     } catch {
-      // Fallback
+      $output.style.display = '';
       $output.select();
       document.execCommand('copy');
-      showToast('✓ 已复制到剪贴板');
-      setTimeout(() => {
-        $copyBtn.classList.remove('copied');
-        $copyBtn.innerHTML = '复制结果';
-      }, 2000);
+      applyDiffMode();
+      done();
     }
   });
 
@@ -1205,11 +1109,12 @@
         showToast('已从剪贴板粘贴');
       }
     } catch {
-      showToast('! 无法读取剪贴板，请手动粘贴', 'warning');
+      showToast('无法读取剪贴板，请手动粘贴', 'warning');
+      $input.focus();
     }
   });
 
-  // --- Swap (set output as input) ---
+  // --- Swap ---
   $swapBtn.addEventListener('click', () => {
     if (!$output.value.trim()) return;
     $input.value = $output.value;
@@ -1220,9 +1125,8 @@
   // --- Clear ---
   $clearBtn.addEventListener('click', () => {
     $input.value = '';
-    $output.value = '';
     process();
-    showToast('已清空');
+    $input.focus();
   });
 
   // --- Toast ---
@@ -1230,61 +1134,44 @@
   function showToast(msg, type) {
     clearTimeout(toastTimer);
     $toast.textContent = msg;
-    $toast.className = 'toast show';
-    if (type === 'warning') {
-      $toast.style.borderColor = 'var(--orange)';
-      $toast.style.color = 'var(--orange)';
-    } else {
-      $toast.style.borderColor = 'var(--green)';
-      $toast.style.color = 'var(--green)';
-    }
-    toastTimer = setTimeout(() => {
-      $toast.classList.remove('show');
-    }, 2000);
+    $toast.className = 'toast show' + (type === 'warning' ? ' warning' : '');
+    toastTimer = setTimeout(() => $toast.classList.remove('show'), 2000);
   }
 
   // --- Keyboard shortcuts ---
   document.addEventListener('keydown', e => {
-    // Ctrl+Shift+V to paste from clipboard
     if (e.ctrlKey && e.shiftKey && e.key === 'V') {
       e.preventDefault();
       $pasteBtn.click();
     }
-    // Ctrl+Enter to copy result（Ctrl+Shift+C 会和浏览器开发者工具的"检查元素"冲突）
     if (e.ctrlKey && !e.shiftKey && e.key === 'Enter') {
       e.preventDefault();
       $copyBtn.click();
     }
   });
 
-  // --- Theme toggle ---
-  const themeToggle = document.getElementById('themeToggle');
-  const STORAGE_KEY = 'supercopy-theme';
+  // --- Theme ---
+  const themeToggle = $('themeToggle');
+  const THEME_KEY = 'supercopy-theme';
 
   function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem(STORAGE_KEY, theme);
-    const icon = themeToggle.querySelector('.toggle-icon');
-    const label = themeToggle.querySelector('span:last-child');
-    if (theme === 'light') {
-      icon.textContent = '☾';
-      label.textContent = '暗色';
-    } else {
-      icon.textContent = '☀';
-      label.textContent = '亮色';
-    }
+    try { localStorage.setItem(THEME_KEY, theme); } catch {}
+    themeToggle.textContent = theme === 'light' ? '暗色' : '亮色';
   }
 
-  // Load saved theme
-  const savedTheme = localStorage.getItem(STORAGE_KEY) || 'dark';
-  setTheme(savedTheme);
+  let savedTheme;
+  try { savedTheme = localStorage.getItem(THEME_KEY); } catch {}
+  setTheme(savedTheme === 'dark' ? 'dark' : 'light');
 
   themeToggle.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
     setTheme(current === 'light' ? 'dark' : 'light');
   });
 
-  // --- Initial process ---
+  // --- Init ---
+  syncFilterUI();
+  renderHistory();
   process();
 })();
 </script>
