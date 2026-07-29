@@ -46,37 +46,4 @@ python server.py
 | `https://i2.y.qq.com/...playsong/index.html?ADTAG=...&songmid=002KYwxn39DSSf&type=0` | `https://i2.y.qq.com/...playsong/index.html?songmid=002KYwxn39DSSf` |
 | `https://y.music.163.com/m/song?id=3392668759&...` | `https://music.163.com/#/song?id=3392668759` |
 
-## Android App
-
-Kotlin + Jetpack Compose + [miuix](https://github.com/compose-miuix-ui/miuix) 原生实现，澎湃OS 风格：
-
-- 网页版全部处理能力（短链展开直接在 App 内完成，无需服务器）
-- **系统分享接收** — 在任意 App 里分享文本给 SuperCopy 即自动处理
-- **文本选择菜单** — 长按选中文本，菜单里直接选 SuperCopy
-- **打开自动读剪贴板**，处理完一键复制回去
-- 澎湃OS 流体光背景关于页、毛玻璃顶栏、可预测返回
-- 多语言：简体中文 / 繁體中文 / English（支持 Android 13+ 按应用设置语言）
-
-### 构建
-```bash
-cd android
-gradle assembleRelease   # 需要 JDK 17+ / Android SDK 37
-```
-
-## 项目结构
-
-```
-SuperCopy/
-├── index.html          # 网页版界面 + 处理逻辑
-├── tracking-rules.js   # 追踪参数清理规则引擎
-├── server.py           # 本地服务器（短链展开 API）
-├── CLAUDE.md           # UI 设计规范（miuix / Mishka 风格）
-└── android/            # Android App（Kotlin + Compose + miuix）
-    └── app/src/main/java/com/supercopy/app/
-        ├── core/       # 规则引擎移植：TrackingRules / UrlExpander / Processor / BvAv
-        └── ui/         # MainScreen / AboutScreen / 澎湃OS BgEffect / 毛玻璃组件
-```
-
----
-
 > 本项目由 **Claude Fable 5** 协助制作
